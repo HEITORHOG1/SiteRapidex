@@ -3,7 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { AuthService } from '../../core/services/auth.service';
-import { EstabelecimentoService } from '../../data-access/api/estabelecimento.api';
+import { EstabelecimentoService } from '../../core/services/estabelecimento.service';
 import { Estabelecimento } from '../../data-access/models/estabelecimento.models';
 import { Subject, combineLatest } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
@@ -150,14 +150,14 @@ export class DashboardComponent implements OnInit, OnDestroy {
     // Escuta mudanças na lista de estabelecimentos
     this.estabelecimentoService.estabelecimentos$
       .pipe(takeUntil(this.destroy$))
-      .subscribe((estabelecimentos) => {
+      .subscribe((estabelecimentos: Estabelecimento[]) => {
         this.estabelecimentos = estabelecimentos;
       });
 
     // Escuta mudanças no estabelecimento selecionado
     this.estabelecimentoService.selectedEstabelecimento$
       .pipe(takeUntil(this.destroy$))
-      .subscribe((estabelecimento) => {
+      .subscribe((estabelecimento: Estabelecimento | null) => {
         this.selectedEstabelecimento = estabelecimento;
         if (estabelecimento) {
           this.updateStatsForEstabelecimento(estabelecimento);
@@ -186,11 +186,11 @@ export class DashboardComponent implements OnInit, OnDestroy {
 
     this.estabelecimentoService.loadEstabelecimentosForProprietario(userId)
       .subscribe({
-        next: (estabelecimentos) => {
+        next: (estabelecimentos: Estabelecimento[]) => {
           this.isLoadingEstabelecimentos = false;
           console.log('Estabelecimentos carregados:', estabelecimentos);
         },
-        error: (error) => {
+        error: (error: any) => {
           this.isLoadingEstabelecimentos = false;
           this.estabelecimentoError = error.message || 'Erro ao carregar estabelecimentos';
           console.error('Erro ao carregar estabelecimentos:', error);

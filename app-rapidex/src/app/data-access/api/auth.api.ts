@@ -1,13 +1,20 @@
 import { inject, Injectable } from "@angular/core";
 import { HttpClient } from "@angular/common/http";
-import { environment } from "../../../environments/environment";
-import { LoginRequest, LoginResponse } from "@data-access/models/auth.models";
+import { LoginRequest, LoginResponse, RefreshTokenRequest } from "@data-access/models/auth.models";
+import { ApiConfigService } from "../../core/services/api-config.service";
 
 @Injectable({ providedIn: "root" })
 export class AuthApi {
   private http = inject(HttpClient);
-  private base = environment.apiBaseUrl;
+  private apiConfig = inject(ApiConfigService);
+
   login(payload: LoginRequest) {
-    return this.http.post<LoginResponse>(`${this.base}/api/Auth/login`, payload);
+    const endpoint = this.apiConfig.getConfiguredEndpoint('auth', 'login');
+    return this.http.post<LoginResponse>(endpoint, payload);
+  }
+
+  refreshToken(payload: RefreshTokenRequest) {
+    const endpoint = this.apiConfig.getConfiguredEndpoint('auth', 'refreshToken');
+    return this.http.post<LoginResponse>(endpoint, payload);
   }
 }
