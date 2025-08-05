@@ -46,3 +46,21 @@ export enum ErrorCodes {
   VALIDATION_ERROR = 'VALIDATION_ERROR',
   SERVER_ERROR = 'SERVER_ERROR'
 }
+
+// UI State Models for enhanced user experience
+export interface LoadingState {
+  isLoading: boolean;
+  message?: string;
+}
+
+export interface ErrorState {
+  hasError: boolean;
+  message?: string;
+  code?: string;
+}
+
+export interface NotificationState {
+  type: 'success' | 'error' | 'warning' | 'info';
+  message: string;
+  duration?: number;
+}
