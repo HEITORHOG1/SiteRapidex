@@ -1,1 +1,33 @@
-<p>loading works!</p>
+<div class="loading-spinner" [class.loading-spinner--overlay]="overlay">
+  <div class="loading-spinner__container">
+    <div 
+      class="loading-spinner__spinner" 
+      [class]="'loading-spinner__spinner--' + size"
+      role="status"
+      [attr.aria-label]="message || 'Carregando...'"
+    >
+      <svg class="loading-spinner__icon" viewBox="0 0 24 24">
+        <circle 
+          class="loading-spinner__circle" 
+          cx="12" 
+          cy="12" 
+          r="10" 
+          fill="none" 
+          stroke="currentColor" 
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-dasharray="31.416"
+          stroke-dashoffset="31.416"
+        />
+      </svg>
+    </div>
+    
+    <p 
+      *ngIf="message" 
+      class="loading-spinner__message"
+      [class]="'loading-spinner__message--' + size"
+    >
+      {{ message }}
+    </p>
+  </div>
+</div>

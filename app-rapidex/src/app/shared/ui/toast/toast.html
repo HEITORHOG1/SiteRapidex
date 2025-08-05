@@ -1,0 +1,53 @@
+<div 
+  class="toast" 
+  [class]="'toast--' + notification.type"
+  role="alert"
+  [attr.aria-live]="notification.type === 'error' ? 'assertive' : 'polite'"
+>
+  <div class="toast__content">
+    <div class="toast__icon">
+      <svg 
+        class="toast__icon-svg" 
+        fill="none" 
+        viewBox="0 0 24 24" 
+        stroke-width="1.5" 
+        stroke="currentColor"
+      >
+        <path stroke-linecap="round" stroke-linejoin="round" [attr.d]="iconPath" />
+      </svg>
+    </div>
+    
+    <div class="toast__text">
+      <p class="toast__message">{{ notification.message }}</p>
+    </div>
+    
+    <div class="toast__actions">
+      <button 
+        *ngIf="notification.action"
+        type="button"
+        class="toast__button toast__button--action"
+        (click)="onActionClick()"
+      >
+        {{ notification.action.label }}
+      </button>
+      
+      <button 
+        *ngIf="notification.dismissible"
+        type="button"
+        class="toast__button toast__button--dismiss"
+        (click)="onDismiss()"
+        aria-label="Fechar notificação"
+      >
+        <svg 
+          class="toast__button-icon" 
+          fill="none" 
+          viewBox="0 0 24 24" 
+          stroke-width="1.5" 
+          stroke="currentColor"
+        >
+          <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+        </svg>
+      </button>
+    </div>
+  </div>
+</div>

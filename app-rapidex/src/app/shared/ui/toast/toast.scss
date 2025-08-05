@@ -1,0 +1,145 @@
+@use 'sass:color';
+@import '../../../../styles/tokens';
+@import '../../../../styles/mixins';
+
+.toast {
+  background-color: $white;
+  border-radius: $border-radius-lg;
+  box-shadow: $shadow-lg;
+  padding: $spacing-md;
+  margin-bottom: $spacing-sm;
+  max-width: 400px;
+  animation: slideInFromTop $transition-normal;
+  border-left: 4px solid;
+  
+  &--success {
+    border-left-color: $success-color;
+    
+    .toast__icon {
+      color: $success-color;
+    }
+  }
+  
+  &--error {
+    border-left-color: $error-color;
+    
+    .toast__icon {
+      color: $error-color;
+    }
+  }
+  
+  &--warning {
+    border-left-color: $warning-color;
+    
+    .toast__icon {
+      color: $warning-color;
+    }
+  }
+  
+  &--info {
+    border-left-color: $info-color;
+    
+    .toast__icon {
+      color: $info-color;
+    }
+  }
+
+  &__content {
+    @include flex-between;
+    gap: $spacing-sm;
+    align-items: flex-start;
+  }
+
+  &__icon {
+    flex-shrink: 0;
+    margin-top: 2px; // Align with text baseline
+    
+    &-svg {
+      width: 1.25rem;
+      height: 1.25rem;
+    }
+  }
+
+  &__text {
+    flex: 1;
+    min-width: 0;
+  }
+
+  &__message {
+    margin: 0;
+    font-size: $font-size-sm;
+    font-weight: $font-weight-medium;
+    line-height: $line-height-normal;
+    color: $gray-900;
+    word-wrap: break-word;
+  }
+
+  &__actions {
+    @include flex-center;
+    gap: $spacing-xs;
+    flex-shrink: 0;
+  }
+
+  &__button {
+    @include button-reset;
+    @include flex-center;
+    padding: $spacing-xs $spacing-sm;
+    border-radius: $border-radius-md;
+    font-size: $font-size-xs;
+    font-weight: $font-weight-medium;
+    transition: all $transition-fast;
+    
+    &:focus {
+      outline: 2px solid transparent;
+      outline-offset: 2px;
+      box-shadow: 0 0 0 2px $primary-color;
+    }
+    
+    &--action {
+      background-color: $primary-color;
+      color: $white;
+      
+      &:hover {
+        background-color: color.scale($primary-color, $lightness: -18.75%);
+        transform: translateY(-1px);
+      }
+      
+      &:active {
+        transform: translateY(0);
+      }
+    }
+    
+    &--dismiss {
+      background-color: transparent;
+      color: $gray-500;
+      
+      &:hover {
+        color: $gray-700;
+        background-color: $gray-100;
+      }
+    }
+    
+    &-icon {
+      width: 1rem;
+      height: 1rem;
+    }
+  }
+
+  // Animation for dismissal
+  &.toast--dismissing {
+    animation: slideOutToTop $transition-normal forwards;
+  }
+
+  // Responsive adjustments
+  @include mobile-only {
+    max-width: calc(100vw - #{$spacing-lg});
+    
+    &__content {
+      gap: $spacing-xs;
+    }
+    
+    &__message {
+      font-size: $font-size-xs;
+    }
+  }
+}

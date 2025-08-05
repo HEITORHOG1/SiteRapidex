@@ -1,1 +1,25 @@
 /* You can add global styles to this file, and also import other style files */
+
+// Import design system tokens and mixins
+@import 'styles/tokens';
+@import 'styles/mixins';
+
+// Global styles
+* {
+  box-sizing: border-box;
+}
+
+body {
+  font-family: $font-family-primary;
+  font-size: $font-size-base;
+  line-height: $line-height-normal;
+  color: $gray-900;
+  background-color: $gray-50;
+  margin: 0;
+  padding: 0;
+}
+
+// Global utility classes
+.sr-only {
+  @include visually-hidden;
+}

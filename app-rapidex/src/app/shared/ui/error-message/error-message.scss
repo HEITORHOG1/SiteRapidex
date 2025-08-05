@@ -1,0 +1,141 @@
+@import '../../../../styles/tokens';
+@import '../../../../styles/mixins';
+
+.error-message {
+  border-radius: $border-radius-lg;
+  padding: $spacing-md;
+  margin-bottom: $spacing-md;
+  animation: fadeIn $transition-normal;
+  
+  &--error {
+    background-color: #fef2f2;
+    border: 1px solid #fecaca;
+    color: #991b1b;
+    
+    .error-message__icon {
+      color: $error-color;
+    }
+  }
+  
+  &--warning {
+    background-color: #fffbeb;
+    border: 1px solid #fed7aa;
+    color: #92400e;
+    
+    .error-message__icon {
+      color: $warning-color;
+    }
+  }
+  
+  &--info {
+    background-color: #eff6ff;
+    border: 1px solid #bfdbfe;
+    color: #1e40af;
+    
+    .error-message__icon {
+      color: $info-color;
+    }
+  }
+
+  &__content {
+    @include flex-between;
+    gap: $spacing-sm;
+  }
+
+  &__icon {
+    flex-shrink: 0;
+    
+    &-svg {
+      width: 1.25rem;
+      height: 1.25rem;
+    }
+  }
+
+  &__text {
+    flex: 1;
+    min-width: 0;
+  }
+
+  &__message {
+    margin: 0;
+    font-size: $font-size-sm;
+    font-weight: $font-weight-medium;
+    line-height: $line-height-tight;
+    word-wrap: break-word;
+  }
+
+  &__actions {
+    @include flex-center;
+    gap: $spacing-xs;
+    flex-shrink: 0;
+  }
+
+  &__button {
+    @include button-reset;
+    @include flex-center;
+    gap: $spacing-xs;
+    padding: $spacing-xs $spacing-sm;
+    border-radius: $border-radius-md;
+    font-size: $font-size-xs;
+    font-weight: $font-weight-medium;
+    transition: all $transition-fast;
+    
+    &:focus {
+      outline: 2px solid transparent;
+      outline-offset: 2px;
+      box-shadow: 0 0 0 2px currentColor;
+    }
+    
+    &--retry {
+      background-color: rgba(255, 255, 255, 0.8);
+      color: inherit;
+      border: 1px solid currentColor;
+      
+      &:hover {
+        background-color: rgba(255, 255, 255, 1);
+        transform: translateY(-1px);
+      }
+      
+      &:active {
+        transform: translateY(0);
+      }
+    }
+    
+    &--dismiss {
+      background-color: transparent;
+      color: inherit;
+      opacity: 0.7;
+      
+      &:hover {
+        opacity: 1;
+        background-color: rgba(0, 0, 0, 0.05);
+      }
+    }
+    
+    &-icon {
+      width: 1rem;
+      height: 1rem;
+    }
+  }
+
+  // Responsive adjustments
+  @include mobile-only {
+    &__content {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: $spacing-sm;
+    }
+    
+    &__actions {
+      align-self: stretch;
+      justify-content: flex-end;
+    }
+    
+    &__button {
+      &--retry {
+        flex: 1;
+        justify-content: center;
+      }
+    }
+  }
+}

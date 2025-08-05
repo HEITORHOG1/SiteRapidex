@@ -1,0 +1,8 @@
+<div class="toast-container" aria-live="polite" aria-label="Notificações">
+  <rx-toast
+    *ngFor="let notification of notifications$ | async; trackBy: trackByNotificationId"
+    [notification]="notification"
+    (dismiss)="onDismiss($event)"
+    (actionClick)="onActionClick($event)"
+  ></rx-toast>
+</div>

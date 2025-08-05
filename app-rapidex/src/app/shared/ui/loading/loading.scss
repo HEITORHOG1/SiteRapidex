@@ -1,0 +1,87 @@
+@import '../../../../styles/tokens';
+@import '../../../../styles/mixins';
+
+.loading-spinner {
+  @include flex-center;
+  
+  &--overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(255, 255, 255, 0.8);
+    backdrop-filter: blur(2px);
+    z-index: $z-modal;
+  }
+
+  &__container {
+    @include flex-center;
+    flex-direction: column;
+    gap: $spacing-md;
+  }
+
+  &__spinner {
+    display: inline-block;
+    color: $primary-color;
+    
+    &--small {
+      width: 1rem;
+      height: 1rem;
+    }
+    
+    &--medium {
+      width: 1.5rem;
+      height: 1.5rem;
+    }
+    
+    &--large {
+      width: 2rem;
+      height: 2rem;
+    }
+  }
+
+  &__icon {
+    width: 100%;
+    height: 100%;
+    animation: spin 1s linear infinite;
+  }
+
+  &__circle {
+    animation: loading-dash 1.5s ease-in-out infinite;
+  }
+
+  &__message {
+    margin: 0;
+    text-align: center;
+    color: $gray-600;
+    font-weight: $font-weight-medium;
+    
+    &--small {
+      font-size: $font-size-xs;
+    }
+    
+    &--medium {
+      font-size: $font-size-sm;
+    }
+    
+    &--large {
+      font-size: $font-size-base;
+    }
+  }
+}
+
+@keyframes loading-dash {
+  0% {
+    stroke-dasharray: 1, 150;
+    stroke-dashoffset: 0;
+  }
+  50% {
+    stroke-dasharray: 90, 150;
+    stroke-dashoffset: -35;
+  }
+  100% {
+    stroke-dasharray: 90, 150;
+    stroke-dashoffset: -124;
+  }
+}
