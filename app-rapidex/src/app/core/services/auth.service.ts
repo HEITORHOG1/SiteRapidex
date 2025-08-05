@@ -1,7 +1,7 @@
 import { Injectable, inject } from "@angular/core";
-import { BehaviorSubject, Observable, tap, throwError, timer, switchMap, catchError, of, Subject, share } from "rxjs";
-import { LoginRequest, LoginResponse, UserInfo, AuthState, RefreshTokenRequest } from "@data-access/models/auth.models";
-import { AuthApi } from "@data-access/api/auth.api";
+import { BehaviorSubject, Observable, tap, throwError, switchMap, catchError, of, Subject, share } from "rxjs";
+import { LoginRequest, LoginResponse, UserInfo, AuthState, RefreshTokenRequest } from "../../data-access/models/auth.models";
+import { AuthApi } from "../../data-access/api/auth.api";
 import { environment } from "../../../environments/environment";
 
 const STORAGE_KEYS = { token: "auth.token", refreshToken: "auth.refreshToken", expiresAt: "auth.expiresAt", roles: "auth.roles", user: "auth.user" } as const;

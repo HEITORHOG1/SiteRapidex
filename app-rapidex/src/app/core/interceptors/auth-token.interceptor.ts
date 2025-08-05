@@ -1,13 +1,13 @@
 import { HttpInterceptorFn } from "@angular/common/http";
 import { inject } from "@angular/core";
 import { AuthService } from "../services/auth.service";
-import { switchMap, catchError, throwError } from "rxjs";
+import { switchMap, catchError, throwError, of } from "rxjs";
 
 export const authTokenInterceptor: HttpInterceptorFn = (req, next) => {
   const authService = inject(AuthService);
   
   // Skip auth for login and refresh token endpoints
-  if (req.url.includes('/api/Auth/login') || req.url.includes('/api/Auth/refresh-token')) {
+  if (isAuthEndpoint(req.url)) {
     return next(req);
   }
   
@@ -19,13 +19,19 @@ export const authTokenInterceptor: HttpInterceptorFn = (req, next) => {
       return authService.refreshToken().pipe(
         switchMap(() => {
           const newToken = authService.token();
-          const authReq = req.clone({
-            setHeaders: { Authorization: `Bearer ${newToken}` }
-          });
-          return next(authReq);
+          if (newToken) {
+            const authReq = req.clone({
+              setHeaders: { Authorization: `Bearer ${newToken}` }
+            });
+            return next(authReq);
+          } else {
+            // If no new token after refresh, proceed without auth
+            return next(req);
+          }
         }),
         catchError(error => {
           // If refresh fails, proceed with original token
+          // The error interceptor will handle token expiration errors
           const authReq = req.clone({
             setHeaders: { Authorization: `Bearer ${token}` }
           });
@@ -41,5 +47,19 @@ export const authTokenInterceptor: HttpInterceptorFn = (req, next) => {
     }
   }
   
+  // No token available, proceed without auth
   return next(req);
 };
+
+/**
+ * Checks if the request URL is an authentication endpoint that should not have auth headers
+ */
+function isAuthEndpoint(url: string): boolean {
+  const authEndpoints = [
+    '/api/Auth/login',
+    '/api/Auth/refresh-token',
+    '/api/Auth/register'
+  ];
+  
+  return authEndpoints.some(endpoint => url.includes(endpoint));
+}

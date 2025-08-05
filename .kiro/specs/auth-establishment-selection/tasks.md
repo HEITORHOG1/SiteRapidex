@@ -19,7 +19,7 @@
   - Create unit tests for refresh token functionality
   - _Requirements: 2.1, 2.2, 2.3, 2.4, 2.5, 6.1, 6.2_
 
-- [ ] 4. Create HTTP interceptors for authentication and error handling
+- [x] 4. Create HTTP interceptors for authentication and error handling
   - Implement AuthTokenInterceptor to automatically add Bearer tokens
   - Create ErrorInterceptor for global error handling and token refresh
   - Add retry logic for failed requests due to token expiration
