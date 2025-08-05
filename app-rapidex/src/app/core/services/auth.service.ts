@@ -1,5 +1,5 @@
 import { Injectable, inject } from "@angular/core";
-import { BehaviorSubject, Observable, tap, throwError, timer, switchMap, catchError, of } from "rxjs";
+import { BehaviorSubject, Observable, tap, throwError, timer, switchMap, catchError, of, Subject, share } from "rxjs";
 import { LoginRequest, LoginResponse, UserInfo, AuthState, RefreshTokenRequest } from "@data-access/models/auth.models";
 import { AuthApi } from "@data-access/api/auth.api";
 import { environment } from "../../../environments/environment";
@@ -11,6 +11,13 @@ export class AuthService {
   private api = inject(AuthApi);
   private state$ = new BehaviorSubject<AuthState>(this.readInitial());
   private refreshTokenInProgress = false;
+  private refreshTokenSubject$ = new Subject<LoginResponse>();
+  private refreshTimer?: any;
+
+  constructor() {
+    // Initialize automatic refresh if user is already authenticated
+    this.initializeAutoRefresh();
+  }
 
   private readInitial(): AuthState {
     try {
@@ -72,11 +79,20 @@ export class AuthService {
   }
 
   logout() {
+    // Clear any scheduled refresh timer
+    if (this.refreshTimer) {
+      clearTimeout(this.refreshTimer);
+      this.refreshTimer = undefined;
+    }
+
     // Limpa todos os dados de autenticação
     Object.values(STORAGE_KEYS).forEach(k => localStorage.removeItem(k));
     
     // Limpa dados de estabelecimento também
     localStorage.removeItem('selectedEstabelecimento');
+    
+    // Reset refresh state
+    this.refreshTokenInProgress = false;
     
     this.state$.next({ 
       token: null, 
@@ -90,6 +106,7 @@ export class AuthService {
 
   /**
    * Refreshes the authentication token
+   * Handles concurrent requests by sharing the same refresh observable
    */
   refreshToken(): Observable<LoginResponse> {
     const currentState = this.state$.value;
@@ -98,9 +115,9 @@ export class AuthService {
       return throwError(() => new Error('No refresh token available'));
     }
 
+    // If refresh is already in progress, return the shared observable
     if (this.refreshTokenInProgress) {
-      // Return current state as observable if refresh is already in progress
-      return of(null as any);
+      return this.refreshTokenSubject$.asObservable();
     }
 
     this.refreshTokenInProgress = true;
@@ -111,20 +128,31 @@ export class AuthService {
       refreshToken: currentState.refreshToken
     };
 
-    return this.api.refreshToken(refreshRequest).pipe(
+    const refreshObservable = this.api.refreshToken(refreshRequest).pipe(
       tap(res => {
         this.persistLogin(res);
         this.setLoadingState(false);
         this.refreshTokenInProgress = false;
         this.scheduleTokenRefresh();
+        this.refreshTokenSubject$.next(res);
       }),
       catchError(error => {
         this.setLoadingState(false);
         this.refreshTokenInProgress = false;
+        this.refreshTokenSubject$.error(error);
         this.logout(); // Auto logout on refresh failure
         return throwError(() => error);
-      })
+      }),
+      share() // Share the observable to prevent multiple HTTP calls
     );
+
+    // Subscribe to trigger the refresh and handle the shared observable
+    refreshObservable.subscribe({
+      next: () => {}, // Handled in tap
+      error: () => {} // Handled in catchError
+    });
+
+    return refreshObservable;
   }
 
   /**
@@ -155,9 +183,16 @@ export class AuthService {
   }
 
   /**
-   * Schedules automatic token refresh
+   * Schedules automatic token refresh before expiration
+   * Clears any existing refresh timer before scheduling a new one
    */
   private scheduleTokenRefresh(): void {
+    // Clear existing timer
+    if (this.refreshTimer) {
+      clearTimeout(this.refreshTimer);
+      this.refreshTimer = undefined;
+    }
+
     const expiresAt = this.state$.value.expiresAt;
     if (!expiresAt) return;
     
@@ -166,12 +201,33 @@ export class AuthService {
     const threshold = environment.tokenRefreshThreshold;
     const refreshTime = expirationTime - currentTime - threshold;
     
+    // Only schedule if we have enough time before expiration
     if (refreshTime > 0) {
-      timer(refreshTime).pipe(
-        switchMap(() => this.refreshToken()),
-        catchError(() => of(null)) // Ignore errors in scheduled refresh
-      ).subscribe();
+      this.refreshTimer = setTimeout(() => {
+        this.performAutomaticRefresh();
+      }, refreshTime);
+    } else if (this.shouldRefreshToken()) {
+      // If token should be refreshed immediately
+      this.performAutomaticRefresh();
     }
+  }
+
+  /**
+   * Performs automatic token refresh with error handling
+   */
+  private performAutomaticRefresh(): void {
+    if (!this.isAuthenticated() || this.refreshTokenInProgress) {
+      return;
+    }
+
+    this.refreshToken().pipe(
+      catchError(error => {
+        console.error('Automatic token refresh failed:', error);
+        // Don't logout on automatic refresh failure, let the user continue
+        // The next API call will handle the expired token
+        return of(null);
+      })
+    ).subscribe();
   }
 
   /**
@@ -180,6 +236,35 @@ export class AuthService {
   private setLoadingState(isLoading: boolean): void {
     const currentState = this.state$.value;
     this.state$.next({ ...currentState, isLoading });
+  }
+
+  /**
+   * Initializes automatic token refresh if user is already authenticated
+   */
+  private initializeAutoRefresh(): void {
+    if (this.isAuthenticated()) {
+      this.scheduleTokenRefresh();
+    }
+  }
+
+  /**
+   * Gets the time remaining until token expiration in milliseconds
+   */
+  getTokenTimeRemaining(): number {
+    const expiresAt = this.state$.value.expiresAt;
+    if (!expiresAt) return 0;
+    
+    const expirationTime = new Date(expiresAt).getTime();
+    const currentTime = Date.now();
+    
+    return Math.max(0, expirationTime - currentTime);
+  }
+
+  /**
+   * Checks if refresh token is available
+   */
+  hasRefreshToken(): boolean {
+    return !!this.state$.value.refreshToken;
   }
 
   private persistLogin(res: LoginResponse) {
