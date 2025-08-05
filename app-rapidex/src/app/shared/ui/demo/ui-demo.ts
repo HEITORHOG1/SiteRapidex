@@ -2,12 +2,14 @@ import { Component, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { LoadingSpinnerComponent } from '../loading/loading';
 import { ErrorMessageComponent } from '../error-message/error-message';
+import { EstabelecimentoCardComponent } from '../estabelecimento-card/estabelecimento-card';
 import { NotificationService } from '../../services/notification.service';
+import { Estabelecimento } from '../../../data-access/models/estabelecimento.models';
 
 @Component({
   selector: 'rx-ui-demo',
   standalone: true,
-  imports: [CommonModule, LoadingSpinnerComponent, ErrorMessageComponent],
+  imports: [CommonModule, LoadingSpinnerComponent, ErrorMessageComponent, EstabelecimentoCardComponent],
   template: `
     <div class="ui-demo">
       <h2>UI Components Demo</h2>
@@ -56,6 +58,35 @@ import { NotificationService } from '../../services/notification.service';
             retryText="Atualizar"
             (retry)="onRetry()">
           </rx-error-message>
+        </div>
+      </section>
+
+      <section class="demo-section">
+        <h3>Estabelecimento Cards</h3>
+        <div class="cards-grid">
+          <app-estabelecimento-card
+            [estabelecimento]="sampleEstabelecimento"
+            [isSelected]="false"
+            [isLoading]="false"
+            (select)="onCardSelect($event)"
+            (viewDetails)="onViewDetails($event)">
+          </app-estabelecimento-card>
+          
+          <app-estabelecimento-card
+            [estabelecimento]="sampleEstabelecimento2"
+            [isSelected]="true"
+            [isLoading]="false"
+            (select)="onCardSelect($event)"
+            (viewDetails)="onViewDetails($event)">
+          </app-estabelecimento-card>
+          
+          <app-estabelecimento-card
+            [estabelecimento]="sampleEstabelecimento"
+            [isSelected]="false"
+            [isLoading]="true"
+            (select)="onCardSelect($event)"
+            (viewDetails)="onViewDetails($event)">
+          </app-estabelecimento-card>
         </div>
       </section>
 
@@ -168,6 +199,13 @@ import { NotificationService } from '../../services/notification.service';
       background-color: #2563eb;
     }
 
+    .cards-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 1.5rem;
+      margin-top: 1rem;
+    }
+
     @media (max-width: 768px) {
       .demo-row {
         flex-direction: column;
@@ -176,11 +214,53 @@ import { NotificationService } from '../../services/notification.service';
       .ui-demo {
         padding: 1rem;
       }
+      
+      .cards-grid {
+        grid-template-columns: 1fr;
+      }
     }
   `]
 })
 export class UiDemoComponent {
   private notificationService = inject(NotificationService);
+
+  sampleEstabelecimento: Estabelecimento = {
+    id: 1,
+    usuarioId: 'user-123',
+    razaoSocial: 'Restaurante Bom Sabor LTDA',
+    nomeFantasia: 'Bom Sabor',
+    cnpj: '12345678000195',
+    telefone: '11987654321',
+    endereco: 'Rua das Flores, 123',
+    status: true,
+    cep: '01234567',
+    numero: '123',
+    dataCadastro: '2024-01-01T00:00:00Z',
+    latitude: -23.5505,
+    longitude: -46.6333,
+    raioEntregaKm: 5,
+    taxaEntregaFixa: 8.50,
+    descricao: 'Restaurante especializado em comida brasileira com pratos tradicionais e ambiente acolhedor.'
+  };
+
+  sampleEstabelecimento2: Estabelecimento = {
+    id: 2,
+    usuarioId: 'user-123',
+    razaoSocial: 'Pizzaria Italiana LTDA',
+    nomeFantasia: 'Nonna\'s Pizza',
+    cnpj: '98765432000156',
+    telefone: '1134567890',
+    endereco: 'Av. Paulista, 1000',
+    status: false,
+    cep: '01310100',
+    numero: '1000',
+    dataCadastro: '2024-02-01T00:00:00Z',
+    latitude: -23.5618,
+    longitude: -46.6565,
+    raioEntregaKm: 8,
+    taxaEntregaFixa: 12.00,
+    descricao: 'Autêntica pizzaria italiana com receitas tradicionais da família.'
+  };
 
   onRetry(): void {
     console.log('Retry clicked');
@@ -219,5 +299,15 @@ export class UiDemoComponent {
         }
       }
     });
+  }
+
+  onCardSelect(estabelecimento: Estabelecimento): void {
+    console.log('Card selected:', estabelecimento);
+    this.notificationService.success(`Estabelecimento "${estabelecimento.nomeFantasia}" selecionado!`);
+  }
+
+  onViewDetails(estabelecimento: Estabelecimento): void {
+    console.log('View details:', estabelecimento);
+    this.notificationService.info(`Visualizando detalhes de "${estabelecimento.nomeFantasia}"`);
   }
 }

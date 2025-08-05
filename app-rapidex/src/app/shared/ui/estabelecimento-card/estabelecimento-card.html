@@ -1,0 +1,90 @@
+<div 
+  class="estabelecimento-card"
+  [class.estabelecimento-card--selected]="isSelected"
+  [class.estabelecimento-card--loading]="isLoading"
+  (click)="onCardClick()"
+  [attr.aria-label]="'Estabelecimento ' + (estabelecimento.nomeFantasia || '')"
+  [attr.aria-selected]="isSelected"
+  role="button"
+  tabindex="0"
+  (keydown.enter)="onCardClick()"
+  (keydown.space)="onCardClick()">
+
+  <!-- Loading Skeleton -->
+  <div *ngIf="isLoading" class="estabelecimento-card__skeleton">
+    <div class="skeleton skeleton--header"></div>
+    <div class="skeleton skeleton--line"></div>
+    <div class="skeleton skeleton--line skeleton--short"></div>
+    <div class="skeleton skeleton--footer">
+      <div class="skeleton skeleton--badge"></div>
+      <div class="skeleton skeleton--button"></div>
+    </div>
+  </div>
+
+  <!-- Card Content -->
+  <div *ngIf="!isLoading" class="estabelecimento-card__content">
+    <!-- Header -->
+    <div class="estabelecimento-card__header">
+      <h3 class="estabelecimento-card__title">
+        {{ estabelecimento.nomeFantasia }}
+      </h3>
+      <span 
+        class="estabelecimento-card__status"
+        [class]="getStatusClass()"
+        [attr.aria-label]="'Status: ' + getStatusText()">
+        {{ getStatusText() }}
+      </span>
+    </div>
+
+    <!-- Business Info -->
+    <div class="estabelecimento-card__info">
+      <p class="estabelecimento-card__razao-social">
+        {{ estabelecimento.razaoSocial }}
+      </p>
+      <p class="estabelecimento-card__cnpj">
+        CNPJ: {{ formatCnpj() }}
+      </p>
+    </div>
+
+    <!-- Contact & Location -->
+    <div class="estabelecimento-card__details">
+      <div class="estabelecimento-card__contact">
+        <span class="estabelecimento-card__phone" *ngIf="estabelecimento.telefone">
+          📞 {{ formatPhone() }}
+        </span>
+        <span class="estabelecimento-card__address">
+          📍 {{ formatAddress() }}
+        </span>
+      </div>
+    </div>
+
+    <!-- Description -->
+    <div class="estabelecimento-card__description" *ngIf="estabelecimento.descricao">
+      <p>{{ estabelecimento.descricao }}</p>
+    </div>
+
+    <!-- Footer Actions -->
+    <div class="estabelecimento-card__footer">
+      <div class="estabelecimento-card__meta">
+        <span class="estabelecimento-card__delivery-info">
+          Entrega: {{ estabelecimento.raioEntregaKm }}km - R$ {{ estabelecimento.taxaEntregaFixa | number:'1.2-2' }}
+        </span>
+      </div>
+      <button 
+        class="estabelecimento-card__details-btn"
+        (click)="onViewDetails($event)"
+        [attr.aria-label]="'Ver detalhes de ' + estabelecimento.nomeFantasia"
+        type="button">
+        Ver Detalhes
+      </button>
+    </div>
+  </div>
+
+  <!-- Selection Indicator -->
+  <div 
+    *ngIf="isSelected && !isLoading" 
+    class="estabelecimento-card__selection-indicator"
+    aria-hidden="true">
+    ✓
+  </div>
+</div>

@@ -3,6 +3,7 @@ export { LoadingSpinnerComponent } from './loading/loading';
 export { ErrorMessageComponent } from './error-message/error-message';
 export { ToastComponent } from './toast/toast';
 export { ToastContainerComponent } from './toast-container/toast-container';
+export { EstabelecimentoCardComponent } from './estabelecimento-card/estabelecimento-card';
 
 // Re-export existing components
 export { Footer } from './footer/footer';

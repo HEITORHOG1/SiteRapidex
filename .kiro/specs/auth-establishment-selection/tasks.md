@@ -40,7 +40,7 @@
   - Add SCSS styling following design system tokens
   - _Requirements: 1.5, 3.5, 5.2, 5.3, 5.4, 5.5, 6.6_
 
-- [ ] 7. Create EstabelecimentoCardComponent for elegant establishment display
+- [x] 7. Create EstabelecimentoCardComponent for elegant establishment display
   - Build EstabelecimentoCardComponent as dumb component
   - Implement responsive card design with establishment information
   - Add selection states and hover effects
