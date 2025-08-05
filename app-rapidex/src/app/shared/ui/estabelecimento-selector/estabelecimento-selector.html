@@ -1,0 +1,114 @@
+<div class="estabelecimento-selector">
+  <!-- Loading State -->
+  <div *ngIf="isLoading" class="estabelecimento-selector__loading">
+    <rx-loading-spinner 
+      size="large" 
+      message="Carregando estabelecimentos...">
+    </rx-loading-spinner>
+  </div>
+
+  <!-- Error State -->
+  <div *ngIf="showError" class="estabelecimento-selector__error">
+    <rx-error-message
+      [message]="error!"
+      type="error"
+      [showRetry]="true"
+      (retry)="onRetry()">
+    </rx-error-message>
+  </div>
+
+  <!-- Empty State -->
+  <div *ngIf="showEmptyState" class="estabelecimento-selector__empty">
+    <div class="empty-state">
+      <div class="empty-state__icon">
+        <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+          <path d="M19 21V5a2 2 0 0 0-2-2H7a2 2 0 0 0-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1"/>
+        </svg>
+      </div>
+      <h3 class="empty-state__title">Nenhum estabelecimento encontrado</h3>
+      <p class="empty-state__description">
+        Você ainda não possui estabelecimentos cadastrados. 
+        Cadastre seu primeiro estabelecimento para começar a usar o sistema.
+      </p>
+      <button type="button" class="empty-state__action">
+        Cadastrar Estabelecimento
+      </button>
+    </div>
+  </div>
+
+  <!-- Content State -->
+  <div *ngIf="showContent" class="estabelecimento-selector__content">
+    <!-- Header -->
+    <div class="estabelecimento-selector__header">
+      <h2 class="estabelecimento-selector__title">
+        Selecione um Estabelecimento
+      </h2>
+      <p class="estabelecimento-selector__subtitle">
+        Escolha o estabelecimento que deseja gerenciar
+      </p>
+      
+      <!-- View Mode Toggle -->
+      <div class="view-toggle">
+        <button 
+          type="button"
+          class="view-toggle__button"
+          [class.view-toggle__button--active]="viewMode === 'grid'"
+          (click)="viewMode = 'grid'"
+          aria-label="Visualização em grade">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="3" y="3" width="7" height="7"/>
+            <rect x="14" y="3" width="7" height="7"/>
+            <rect x="14" y="14" width="7" height="7"/>
+            <rect x="3" y="14" width="7" height="7"/>
+          </svg>
+        </button>
+        <button 
+          type="button"
+          class="view-toggle__button"
+          [class.view-toggle__button--active]="viewMode === 'list'"
+          (click)="viewMode = 'list'"
+          aria-label="Visualização em lista">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="8" y1="6" x2="21" y2="6"/>
+            <line x1="8" y1="12" x2="21" y2="12"/>
+            <line x1="8" y1="18" x2="21" y2="18"/>
+            <line x1="3" y1="6" x2="3.01" y2="6"/>
+            <line x1="3" y1="12" x2="3.01" y2="12"/>
+            <line x1="3" y1="18" x2="3.01" y2="18"/>
+          </svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- Establishments Grid/List -->
+    <div 
+      class="estabelecimento-selector__grid"
+      [class.estabelecimento-selector__grid--list]="viewMode === 'list'"
+      [class.estabelecimento-selector__grid--grid]="viewMode === 'grid'">
+      
+      <app-estabelecimento-card
+        *ngFor="let estabelecimento of estabelecimentos; trackBy: trackByEstabelecimento"
+        [estabelecimento]="estabelecimento"
+        [isSelected]="isSelected(estabelecimento)"
+        [isLoading]="false"
+        (select)="onEstabelecimentoSelect($event)"
+        (viewDetails)="onViewDetails($event)"
+        class="estabelecimento-selector__card">
+      </app-estabelecimento-card>
+    </div>
+
+    <!-- Selection Summary -->
+    <div *ngIf="selectedEstabelecimento" class="estabelecimento-selector__summary">
+      <div class="selection-summary">
+        <div class="selection-summary__content">
+          <h4 class="selection-summary__title">Estabelecimento Selecionado</h4>
+          <p class="selection-summary__name">{{ selectedEstabelecimento.nomeFantasia }}</p>
+          <p class="selection-summary__address">{{ selectedEstabelecimento.endereco }}, {{ selectedEstabelecimento.numero }}</p>
+        </div>
+        <button type="button" class="selection-summary__confirm">
+          Continuar com este Estabelecimento
+        </button>
+      </div>
+    </div>
+  </div>
+</div>

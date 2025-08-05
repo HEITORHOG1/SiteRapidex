@@ -3,13 +3,14 @@ import { CommonModule } from '@angular/common';
 import { LoadingSpinnerComponent } from '../loading/loading';
 import { ErrorMessageComponent } from '../error-message/error-message';
 import { EstabelecimentoCardComponent } from '../estabelecimento-card/estabelecimento-card';
+import { EstabelecimentoSelectorComponent } from '../estabelecimento-selector/estabelecimento-selector';
 import { NotificationService } from '../../services/notification.service';
 import { Estabelecimento } from '../../../data-access/models/estabelecimento.models';
 
 @Component({
   selector: 'rx-ui-demo',
   standalone: true,
-  imports: [CommonModule, LoadingSpinnerComponent, ErrorMessageComponent, EstabelecimentoCardComponent],
+  imports: [CommonModule, LoadingSpinnerComponent, ErrorMessageComponent, EstabelecimentoCardComponent, EstabelecimentoSelectorComponent],
   template: `
     <div class="ui-demo">
       <h2>UI Components Demo</h2>
@@ -87,6 +88,55 @@ import { Estabelecimento } from '../../../data-access/models/estabelecimento.mod
             (select)="onCardSelect($event)"
             (viewDetails)="onViewDetails($event)">
           </app-estabelecimento-card>
+        </div>
+      </section>
+
+      <section class="demo-section">
+        <h3>Estabelecimento Selector</h3>
+        <div class="selector-demo">
+          <h4>Normal State</h4>
+          <app-estabelecimento-selector
+            [estabelecimentos]="sampleEstabelecimentos"
+            [selectedEstabelecimento]="selectedEstabelecimento"
+            [isLoading]="false"
+            [error]="null"
+            (estabelecimentoSelected)="onEstabelecimentoSelected($event)"
+            (viewDetails)="onViewDetails($event)"
+            (retry)="onRetry()">
+          </app-estabelecimento-selector>
+          
+          <h4>Loading State</h4>
+          <app-estabelecimento-selector
+            [estabelecimentos]="[]"
+            [selectedEstabelecimento]="null"
+            [isLoading]="true"
+            [error]="null"
+            (estabelecimentoSelected)="onEstabelecimentoSelected($event)"
+            (viewDetails)="onViewDetails($event)"
+            (retry)="onRetry()">
+          </app-estabelecimento-selector>
+          
+          <h4>Error State</h4>
+          <app-estabelecimento-selector
+            [estabelecimentos]="[]"
+            [selectedEstabelecimento]="null"
+            [isLoading]="false"
+            [error]="'Erro ao carregar estabelecimentos. Verifique sua conexão.'"
+            (estabelecimentoSelected)="onEstabelecimentoSelected($event)"
+            (viewDetails)="onViewDetails($event)"
+            (retry)="onRetry()">
+          </app-estabelecimento-selector>
+          
+          <h4>Empty State</h4>
+          <app-estabelecimento-selector
+            [estabelecimentos]="[]"
+            [selectedEstabelecimento]="null"
+            [isLoading]="false"
+            [error]="null"
+            (estabelecimentoSelected)="onEstabelecimentoSelected($event)"
+            (viewDetails)="onViewDetails($event)"
+            (retry)="onRetry()">
+          </app-estabelecimento-selector>
         </div>
       </section>
 
@@ -206,6 +256,20 @@ import { Estabelecimento } from '../../../data-access/models/estabelecimento.mod
       margin-top: 1rem;
     }
 
+    .selector-demo {
+      display: flex;
+      flex-direction: column;
+      gap: 2rem;
+    }
+
+    .selector-demo h4 {
+      margin: 0 0 1rem 0;
+      color: #475569;
+      font-size: 1.1rem;
+      border-left: 4px solid #2563eb;
+      padding-left: 1rem;
+    }
+
     @media (max-width: 768px) {
       .demo-row {
         flex-direction: column;
@@ -223,6 +287,8 @@ import { Estabelecimento } from '../../../data-access/models/estabelecimento.mod
 })
 export class UiDemoComponent {
   private notificationService = inject(NotificationService);
+  
+  selectedEstabelecimento: Estabelecimento | null = null;
 
   sampleEstabelecimento: Estabelecimento = {
     id: 1,
@@ -261,6 +327,10 @@ export class UiDemoComponent {
     taxaEntregaFixa: 12.00,
     descricao: 'Autêntica pizzaria italiana com receitas tradicionais da família.'
   };
+
+  get sampleEstabelecimentos(): Estabelecimento[] {
+    return [this.sampleEstabelecimento, this.sampleEstabelecimento2];
+  }
 
   onRetry(): void {
     console.log('Retry clicked');
@@ -309,5 +379,11 @@ export class UiDemoComponent {
   onViewDetails(estabelecimento: Estabelecimento): void {
     console.log('View details:', estabelecimento);
     this.notificationService.info(`Visualizando detalhes de "${estabelecimento.nomeFantasia}"`);
+  }
+
+  onEstabelecimentoSelected(estabelecimento: Estabelecimento): void {
+    this.selectedEstabelecimento = estabelecimento;
+    console.log('Estabelecimento selected:', estabelecimento);
+    this.notificationService.success(`Estabelecimento "${estabelecimento.nomeFantasia}" selecionado!`);
   }
 }

@@ -48,7 +48,7 @@
   - Write component unit tests
   - _Requirements: 3.2, 4.1, 4.5, 5.1, 5.2, 5.3, 6.5_
 
-- [ ] 8. Create EstabelecimentoSelectorComponent for establishment selection
+- [x] 8. Create EstabelecimentoSelectorComponent for establishment selection
   - Implement EstabelecimentoSelectorComponent as dumb component
   - Create grid/list layout for multiple establishments
   - Add selection logic and visual feedback

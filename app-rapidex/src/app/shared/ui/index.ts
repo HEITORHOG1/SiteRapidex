@@ -4,6 +4,7 @@ export { ErrorMessageComponent } from './error-message/error-message';
 export { ToastComponent } from './toast/toast';
 export { ToastContainerComponent } from './toast-container/toast-container';
 export { EstabelecimentoCardComponent } from './estabelecimento-card/estabelecimento-card';
+export { EstabelecimentoSelectorComponent } from './estabelecimento-selector/estabelecimento-selector';
 
 // Re-export existing components
 export { Footer } from './footer/footer';
