@@ -1,0 +1,160 @@
+<div class="dashboard-container">
+  <!-- Sidebar Menu -->
+  <aside class="sidebar" [class.collapsed]="sidebarCollapsed">
+    <div class="sidebar-header">
+      <div class="logo">
+        <span>📊</span>
+      </div>
+      <span class="logo-text" *ngIf="!sidebarCollapsed">Rapidex</span>
+    </div>
+
+    <nav class="sidebar-nav">
+      <ul class="nav-list">
+        <li class="nav-item">
+          <a routerLink="/dashboard" class="nav-link active">
+            <span class="nav-icon">🏠</span>
+            <span class="nav-text" *ngIf="!sidebarCollapsed">Dashboard</span>
+          </a>
+        </li>
+        <li class="nav-item">
+          <a routerLink="/profile" class="nav-link">
+            <span class="nav-icon">👤</span>
+            <span class="nav-text" *ngIf="!sidebarCollapsed">Perfil</span>
+          </a>
+        </li>
+        <li class="nav-item">
+          <a routerLink="/orders" class="nav-link">
+            <span class="nav-icon">📦</span>
+            <span class="nav-text" *ngIf="!sidebarCollapsed">Pedidos</span>
+          </a>
+        </li>
+        <li class="nav-item">
+          <a routerLink="/analytics" class="nav-link">
+            <span class="nav-icon">📈</span>
+            <span class="nav-text" *ngIf="!sidebarCollapsed">Analytics</span>
+          </a>
+        </li>
+        <li class="nav-item">
+          <a routerLink="/settings" class="nav-link">
+            <span class="nav-icon">⚙️</span>
+            <span class="nav-text" *ngIf="!sidebarCollapsed">Configurações</span>
+          </a>
+        </li>
+      </ul>
+    </nav>
+
+    <div class="sidebar-footer">
+      <div class="user-info" *ngIf="!sidebarCollapsed">
+        <div class="user-avatar">{{ userName.charAt(0).toUpperCase() }}</div>
+        <div class="user-details">
+          <span class="user-name">{{ userName }}</span>
+          <span class="user-role">{{ userRole }}</span>
+        </div>
+      </div>
+      <button class="logout-btn" (click)="logout()">
+        <span class="nav-icon">🚪</span>
+        <span class="nav-text" *ngIf="!sidebarCollapsed">Sair</span>
+      </button>
+    </div>
+  </aside>
+
+  <!-- Main Content -->
+  <main class="main-content">
+    <!-- Header -->
+    <header class="header">
+      <div class="header-left">
+        <h1 class="page-title">Dashboard</h1>
+        <p class="page-subtitle">Bem-vindo de volta, {{ userName }}!</p>
+        
+        <!-- Seleção de Estabelecimento -->
+        <div class="estabelecimento-selector" *ngIf="authService.isProprietario() && estabelecimentos.length > 0">
+          <label for="estabelecimento-select" class="selector-label">
+            <span class="label-icon">🏪</span>
+            Estabelecimento:
+          </label>
+          <select 
+            id="estabelecimento-select" 
+            class="estabelecimento-select"
+            [value]="selectedEstabelecimento?.id || ''"
+            (change)="onEstabelecimentoChange($any($event.target).value)"
+            [disabled]="isLoadingEstabelecimentos">
+            <option value="" disabled>
+              {{ isLoadingEstabelecimentos ? 'Carregando...' : 'Selecione um estabelecimento' }}
+            </option>
+            <option *ngFor="let estabelecimento of estabelecimentos" [value]="estabelecimento.id">
+              {{ estabelecimento.nomeFantasia }} - {{ estabelecimento.razaoSocial }}
+            </option>
+          </select>
+          
+          <!-- Loading indicator -->
+          <div class="loading-indicator" *ngIf="isLoadingEstabelecimentos">
+            <span class="loading-spinner">⏳</span>
+            Carregando estabelecimentos...
+          </div>
+          
+          <!-- Error message -->
+          <div class="error-message" *ngIf="estabelecimentoError">
+            <span class="error-icon">⚠️</span>
+            {{ estabelecimentoError }}
+          </div>
+        </div>
+      </div>
+      <div class="header-right">
+        <div class="search-bar">
+          <input type="text" placeholder="Pesquisar..." class="search-input">
+          <span class="search-icon">🔍</span>
+        </div>
+        <div class="notification-bell">
+          <span class="bell-icon">🔔</span>
+          <span class="notification-badge">3</span>
+        </div>
+      </div>
+    </header>
+
+    <!-- Dashboard Content -->
+    <div class="dashboard-content">
+      <!-- Stats Cards -->
+      <div class="stats-grid">
+        <div class="stat-card" *ngFor="let stat of stats">
+          <div class="stat-header">
+            <div class="stat-title">{{ stat.title }}</div>
+            <div class="stat-icon">{{ stat.icon }}</div>
+          </div>
+          <div class="stat-info">
+            <h3 class="stat-number">{{ stat.value }}</h3>
+            <p class="stat-label">{{ stat.title }}</p>
+            <span class="stat-change" [class]="stat.changeType">{{ stat.change }} ↑</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Recent Activity -->
+      <div class="content-grid">
+        <div class="activity-section">
+          <h2 class="section-title">Atividades Recentes</h2>
+          <div class="activity-list">
+            <div class="activity-item" *ngFor="let activity of recentActivities">
+              <div class="activity-icon">{{ activity.icon }}</div>
+              <div class="activity-content">
+                <h4>{{ activity.title }}</h4>
+                <p>{{ activity.description }}</p>
+                <span class="activity-time">{{ activity.time }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Quick Actions -->
+        <div class="quick-actions">
+          <h2 class="section-title">Ações Rápidas</h2>
+          <div class="action-grid">
+            <button class="action-btn" *ngFor="let action of quickActions" (click)="onQuickAction(action.action)">
+              <span class="action-icon">{{ action.icon }}</span>
+              <span class="action-text">{{ action.text }}</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>

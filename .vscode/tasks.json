@@ -1,0 +1,21 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "Serve Angular App",
+			"type": "shell",
+			"command": "ng serve",
+			"group": "build",
+			"isBackground": true,
+			"problemMatcher": [
+				"$tsc"
+			],
+			"args": [
+				"--host",
+				"0.0.0.0",
+				"--port",
+				"4200"
+			]
+		}
+	]
+}

@@ -1,0 +1,29 @@
+<section class="login-container">
+  <div class="login-card">
+    <h1 class="title">Acessar o sistema</h1>
+    <form (ngSubmit)="onSubmit()" #f="ngForm" novalidate>
+      <div class="form-field">
+        <label for="username">Usuário</label>
+        <input id="username" name="username" [(ngModel)]="username" required autocomplete="username" />
+      </div>
+      <div class="form-field password-field">
+        <label for="password">Senha</label>
+        <div class="password-wrapper">
+          <input
+            id="password"
+            [type]="showPassword ? 'text' : 'password'"
+            name="password"
+            [(ngModel)]="password"
+            required
+            autocomplete="current-password"
+          />
+          <button type="button" class="eye-btn" (click)="togglePassword()" [attr.aria-pressed]="showPassword">
+            {{ showPassword ? '🙈' : '👁️' }}
+          </button>
+        </div>
+      </div>
+      <button class="btn primary" type="submit" [disabled]="loading()">Entrar</button>
+      <p class="error" *ngIf="error()">{{ error() }}</p>
+    </form>
+  </div>
+</section>
