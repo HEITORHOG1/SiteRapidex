@@ -233,6 +233,14 @@ export class DashboardComponent implements OnInit, OnDestroy {
    */
   onEstabelecimentoSelected(estabelecimento: Estabelecimento): void {
     this.estabelecimentoService.selectEstabelecimento(estabelecimento);
+    this.loadStatsForEstabelecimento(estabelecimento);
+  }
+
+  /**
+   * Handles confirmation of establishment selection
+   */
+  onConfirmEstabelecimentoSelection(estabelecimento: Estabelecimento): void {
+    this.estabelecimentoService.selectEstabelecimento(estabelecimento);
     this.showEstabelecimentoSelector = false;
     this.loadStatsForEstabelecimento(estabelecimento);
   }

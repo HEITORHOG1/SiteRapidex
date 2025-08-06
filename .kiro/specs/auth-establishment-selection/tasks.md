@@ -79,7 +79,7 @@
   - Build component-specific SCSS following BEM methodology
   - _Requirements: 5.1, 5.2, 5.3, 5.4, 5.5, 6.6_
 
-- [ ] 12. Add accessibility features and ARIA support
+- [x] 12. Add accessibility features and ARIA support
   - Implement keyboard navigation for establishment selection
   - Add ARIA labels and roles to interactive elements
   - Ensure proper focus management and visual indicators

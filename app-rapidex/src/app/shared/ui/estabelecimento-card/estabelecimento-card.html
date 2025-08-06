@@ -2,13 +2,16 @@
   class="estabelecimento-card"
   [class.estabelecimento-card--selected]="isSelected"
   [class.estabelecimento-card--loading]="isLoading"
+  [class.estabelecimento-card--focused]="isFocused"
   (click)="onCardClick()"
-  [attr.aria-label]="'Estabelecimento ' + (estabelecimento.nomeFantasia || '')"
+  (focus)="onCardFocus()"
+  (blur)="onCardBlur()"
+  [attr.aria-label]="getAriaLabel()"
   [attr.aria-selected]="isSelected"
+  [attr.aria-describedby]="getAriaDescribedBy()"
   role="button"
-  tabindex="0"
-  (keydown.enter)="onCardClick()"
-  (keydown.space)="onCardClick()">
+  [tabindex]="tabIndex"
+  (keydown)="onKeydown($event)">
 
   <!-- Loading Skeleton -->
   <div *ngIf="isLoading" class="estabelecimento-card__skeleton">
@@ -25,48 +28,52 @@
   <div *ngIf="!isLoading" class="estabelecimento-card__content">
     <!-- Header -->
     <div class="estabelecimento-card__header">
-      <h3 class="estabelecimento-card__title">
+      <h3 class="estabelecimento-card__title" [id]="'title-' + estabelecimento.id">
         {{ estabelecimento.nomeFantasia }}
       </h3>
       <span 
         class="estabelecimento-card__status"
         [class]="getStatusClass()"
-        [attr.aria-label]="'Status: ' + getStatusText()">
+        [attr.aria-label]="'Status: ' + getStatusText()"
+        [id]="'status-' + estabelecimento.id">
         {{ getStatusText() }}
       </span>
     </div>
 
     <!-- Business Info -->
-    <div class="estabelecimento-card__info">
+    <div class="estabelecimento-card__info" [id]="'info-' + estabelecimento.id">
       <p class="estabelecimento-card__razao-social">
         {{ estabelecimento.razaoSocial }}
       </p>
       <p class="estabelecimento-card__cnpj">
-        CNPJ: {{ formatCnpj() }}
+        <span class="sr-only">CNPJ:</span>{{ formatCnpj() }}
       </p>
     </div>
 
     <!-- Contact & Location -->
-    <div class="estabelecimento-card__details">
+    <div class="estabelecimento-card__details" [id]="'details-' + estabelecimento.id">
       <div class="estabelecimento-card__contact">
         <span class="estabelecimento-card__phone" *ngIf="estabelecimento.telefone">
-          📞 {{ formatPhone() }}
+          <span class="sr-only">Telefone:</span>
+          <span aria-hidden="true">📞</span> {{ formatPhone() }}
         </span>
         <span class="estabelecimento-card__address">
-          📍 {{ formatAddress() }}
+          <span class="sr-only">Endereço:</span>
+          <span aria-hidden="true">📍</span> {{ formatAddress() }}
         </span>
       </div>
     </div>
 
     <!-- Description -->
-    <div class="estabelecimento-card__description" *ngIf="estabelecimento.descricao">
+    <div class="estabelecimento-card__description" *ngIf="estabelecimento.descricao" [id]="'desc-' + estabelecimento.id">
       <p>{{ estabelecimento.descricao }}</p>
     </div>
 
     <!-- Footer Actions -->
     <div class="estabelecimento-card__footer">
-      <div class="estabelecimento-card__meta">
+      <div class="estabelecimento-card__meta" [id]="'meta-' + estabelecimento.id">
         <span class="estabelecimento-card__delivery-info">
+          <span class="sr-only">Informações de entrega:</span>
           Entrega: {{ estabelecimento.raioEntregaKm }}km - R$ {{ estabelecimento.taxaEntregaFixa | number:'1.2-2' }}
         </span>
       </div>
@@ -74,7 +81,8 @@
         class="estabelecimento-card__details-btn"
         (click)="onViewDetails($event)"
         [attr.aria-label]="'Ver detalhes de ' + estabelecimento.nomeFantasia"
-        type="button">
+        type="button"
+        tabindex="-1">
         Ver Detalhes
       </button>
     </div>
@@ -84,7 +92,18 @@
   <div 
     *ngIf="isSelected && !isLoading" 
     class="estabelecimento-card__selection-indicator"
+    aria-hidden="true"
+    role="img"
+    aria-label="Selecionado">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
+      <path d="M20 6L9 17l-5-5"/>
+    </svg>
+  </div>
+
+  <!-- Focus Indicator -->
+  <div 
+    *ngIf="isFocused && !isLoading" 
+    class="estabelecimento-card__focus-indicator"
     aria-hidden="true">
-    ✓
   </div>
 </div>

@@ -1,6 +1,6 @@
-<div class="estabelecimento-selector">
+<div class="estabelecimento-selector" role="region" aria-label="Seleção de estabelecimento">
   <!-- Loading State -->
-  <div *ngIf="isLoading" class="estabelecimento-selector__loading">
+  <div *ngIf="isLoading" class="estabelecimento-selector__loading" role="status" aria-live="polite">
     <rx-loading-spinner 
       size="large" 
       message="Carregando estabelecimentos...">
@@ -8,7 +8,7 @@
   </div>
 
   <!-- Error State -->
-  <div *ngIf="showError" class="estabelecimento-selector__error">
+  <div *ngIf="showError" class="estabelecimento-selector__error" role="alert" aria-live="assertive">
     <rx-error-message
       [message]="error!"
       type="error"
@@ -18,9 +18,9 @@
   </div>
 
   <!-- Empty State -->
-  <div *ngIf="showEmptyState" class="estabelecimento-selector__empty">
+  <div *ngIf="showEmptyState" class="estabelecimento-selector__empty" role="status" aria-live="polite">
     <div class="empty-state">
-      <div class="empty-state__icon">
+      <div class="empty-state__icon" aria-hidden="true">
         <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
           <path d="M19 21V5a2 2 0 0 0-2-2H7a2 2 0 0 0-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1"/>
         </svg>
@@ -30,7 +30,10 @@
         Você ainda não possui estabelecimentos cadastrados. 
         Cadastre seu primeiro estabelecimento para começar a usar o sistema.
       </p>
-      <button type="button" class="empty-state__action">
+      <button 
+        type="button" 
+        class="empty-state__action"
+        aria-describedby="empty-state-description">
         Cadastrar Estabelecimento
       </button>
     </div>
@@ -40,22 +43,25 @@
   <div *ngIf="showContent" class="estabelecimento-selector__content">
     <!-- Header -->
     <div class="estabelecimento-selector__header">
-      <h2 class="estabelecimento-selector__title">
-        Selecione um Estabelecimento
-      </h2>
-      <p class="estabelecimento-selector__subtitle">
-        Escolha o estabelecimento que deseja gerenciar
-      </p>
+      <div class="estabelecimento-selector__title-group">
+        <h2 class="estabelecimento-selector__title" id="selector-title">
+          Selecione um Estabelecimento
+        </h2>
+        <p class="estabelecimento-selector__subtitle" id="selector-description">
+          Escolha o estabelecimento que deseja gerenciar. Use as setas do teclado para navegar e Enter ou Espaço para selecionar.
+        </p>
+      </div>
       
       <!-- View Mode Toggle -->
-      <div class="view-toggle">
+      <div class="view-toggle" role="group" aria-label="Opções de visualização">
         <button 
           type="button"
           class="view-toggle__button"
           [class.view-toggle__button--active]="viewMode === 'grid'"
-          (click)="viewMode = 'grid'"
+          (click)="setViewMode('grid')"
+          [attr.aria-pressed]="viewMode === 'grid'"
           aria-label="Visualização em grade">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
             <rect x="3" y="3" width="7" height="7"/>
             <rect x="14" y="3" width="7" height="7"/>
             <rect x="14" y="14" width="7" height="7"/>
@@ -66,9 +72,10 @@
           type="button"
           class="view-toggle__button"
           [class.view-toggle__button--active]="viewMode === 'list'"
-          (click)="viewMode = 'list'"
+          (click)="setViewMode('list')"
+          [attr.aria-pressed]="viewMode === 'list'"
           aria-label="Visualização em lista">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
             <line x1="8" y1="6" x2="21" y2="6"/>
             <line x1="8" y1="12" x2="21" y2="12"/>
             <line x1="8" y1="18" x2="21" y2="18"/>
@@ -84,28 +91,49 @@
     <div 
       class="estabelecimento-selector__grid"
       [class.estabelecimento-selector__grid--list]="viewMode === 'list'"
-      [class.estabelecimento-selector__grid--grid]="viewMode === 'grid'">
+      [class.estabelecimento-selector__grid--grid]="viewMode === 'grid'"
+      role="grid"
+      [attr.aria-labelledby]="'selector-title'"
+      [attr.aria-describedby]="'selector-description'"
+      [attr.aria-rowcount]="getRowCount()"
+      [attr.aria-colcount]="getColCount()"
+      (keydown)="onGridKeydown($event)">
       
       <app-estabelecimento-card
-        *ngFor="let estabelecimento of estabelecimentos; trackBy: trackByEstabelecimento"
+        *ngFor="let estabelecimento of estabelecimentos; let i = index; trackBy: trackByEstabelecimento"
         [estabelecimento]="estabelecimento"
         [isSelected]="isSelected(estabelecimento)"
         [isLoading]="false"
+        [tabIndex]="getCardTabIndex(i)"
+        [attr.data-index]="i"
+        [attr.aria-rowindex]="getRowIndex(i)"
+        [attr.aria-colindex]="getColIndex(i)"
         (select)="onEstabelecimentoSelect($event)"
         (viewDetails)="onViewDetails($event)"
-        class="estabelecimento-selector__card">
+        (focus)="onCardFocus(i)"
+        class="estabelecimento-selector__card"
+        role="gridcell">
       </app-estabelecimento-card>
     </div>
 
     <!-- Selection Summary -->
-    <div *ngIf="selectedEstabelecimento" class="estabelecimento-selector__summary">
+    <div 
+      *ngIf="selectedEstabelecimento" 
+      class="estabelecimento-selector__summary"
+      role="status"
+      aria-live="polite"
+      aria-label="Resumo da seleção">
       <div class="selection-summary">
         <div class="selection-summary__content">
-          <h4 class="selection-summary__title">Estabelecimento Selecionado</h4>
-          <p class="selection-summary__name">{{ selectedEstabelecimento.nomeFantasia }}</p>
-          <p class="selection-summary__address">{{ selectedEstabelecimento.endereco }}, {{ selectedEstabelecimento.numero }}</p>
+          <h4 class="selection-summary__title" id="selection-title">Estabelecimento Selecionado</h4>
+          <p class="selection-summary__name" id="selection-name">{{ selectedEstabelecimento.nomeFantasia }}</p>
+          <p class="selection-summary__address" id="selection-address">{{ selectedEstabelecimento.endereco }}, {{ selectedEstabelecimento.numero }}</p>
         </div>
-        <button type="button" class="selection-summary__confirm">
+        <button 
+          type="button" 
+          class="selection-summary__confirm"
+          [attr.aria-describedby]="'selection-name selection-address'"
+          (click)="onConfirmSelection()">
           Continuar com este Estabelecimento
         </button>
       </div>

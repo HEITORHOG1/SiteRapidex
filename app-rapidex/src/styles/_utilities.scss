@@ -336,3 +336,102 @@
   .lg\:grid-cols-6 { grid-template-columns: repeat(6, minmax(0, 1fr)) !important; }
   .lg\:grid-cols-8 { grid-template-columns: repeat(8, minmax(0, 1fr)) !important; }
 }
+// Accessib
+ility utilities
+.visually-hidden,
+.sr-only {
+  position: absolute !important;
+  width: 1px !important;
+  height: 1px !important;
+  padding: 0 !important;
+  margin: -1px !important;
+  overflow: hidden !important;
+  clip: rect(0, 0, 0, 0) !important;
+  white-space: nowrap !important;
+  border: 0 !important;
+}
+
+// Skip links for keyboard navigation
+.skip-link {
+  position: absolute;
+  top: -40px;
+  left: 6px;
+  background: $primary-color;
+  color: $white;
+  padding: 8px;
+  text-decoration: none;
+  border-radius: $border-radius-sm;
+  z-index: 1000;
+  font-weight: $font-weight-semibold;
+  
+  &:focus {
+    top: 6px;
+  }
+}
+
+// Focus management utilities
+.focus-trap {
+  position: relative;
+}
+
+// High contrast mode support
+@media (prefers-contrast: high) {
+  * {
+    border-color: currentColor !important;
+  }
+  
+  button, 
+  input, 
+  select, 
+  textarea {
+    border: 2px solid currentColor !important;
+  }
+}
+
+// Reduced motion support
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+// Focus visible polyfill
+.js-focus-visible :focus:not(.focus-visible) {
+  outline: none;
+}
+
+// Keyboard navigation indicators
+.keyboard-navigation {
+  *:focus {
+    outline: 2px solid $primary-color;
+    outline-offset: 2px;
+  }
+}
+
+// ARIA live region utilities
+.aria-live-polite {
+  @extend .sr-only;
+}
+
+.aria-live-assertive {
+  @extend .sr-only;
+}
+
+// Focus management for modals and overlays
+.modal-focus-trap {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 1000;
+  
+  &:focus {
+    outline: none;
+  }
+}
