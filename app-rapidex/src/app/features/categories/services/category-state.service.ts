@@ -160,9 +160,9 @@ export class CategoryStateService {
           pageSize: this.paginationSubject.value.pageSize
         });
         
-        // Cache the response
+        // Cache the response with intelligent warming
         this.categoryCache.setCategoryList(targetEstablishmentId, response.categorias, requestParams);
-        this.categoryCache.warmupCache(targetEstablishmentId, response.categorias);
+        this.categoryCache.intelligentWarmup(targetEstablishmentId, response.categorias);
       }),
       catchError(error => {
         this.setError(this.extractErrorMessage(error));
@@ -408,14 +408,26 @@ export class CategoryStateService {
   }
 
   /**
-   * Searches categories
+   * Searches categories with caching
    */
   searchCategories(query: string): Observable<Category[]> {
     if (!this.currentEstablishmentId) {
       return of([]);
     }
 
+    // Check cache first for search results
+    const cachedResults = this.categoryCache.getSearchResults(this.currentEstablishmentId, query);
+    if (cachedResults) {
+      return of(cachedResults);
+    }
+
     return this.categoryHttpService.searchCategories(this.currentEstablishmentId, query).pipe(
+      tap(results => {
+        // Cache the search results
+        if (this.currentEstablishmentId) {
+          this.categoryCache.setSearchResults(this.currentEstablishmentId, query, results);
+        }
+      }),
       catchError(error => {
         this.setError(this.extractErrorMessage(error));
         return of([]);
