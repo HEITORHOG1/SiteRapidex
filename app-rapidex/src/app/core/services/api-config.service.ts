@@ -10,6 +10,15 @@ export interface ApiEndpoints {
     byProprietario: string;
     byId: string;
   };
+  categoria: {
+    list: string;
+    detail: string;
+    create: string;
+    update: string;
+    delete: string;
+    validate: string;
+    deletionValidation: string;
+  };
 }
 
 @Injectable({
@@ -26,6 +35,15 @@ export class ApiConfigService {
       estabelecimento: {
         byProprietario: '/api/Estabelecimento/proprietario/{userId}',
         byId: '/api/Estabelecimento/{id}'
+      },
+      categoria: {
+        list: '/api/categorias/estabelecimentos/{estabelecimentoId}/categorias',
+        detail: '/api/categorias/estabelecimentos/{estabelecimentoId}/categorias/{id}',
+        create: '/api/categorias/estabelecimentos/{estabelecimentoId}/categorias',
+        update: '/api/categorias/estabelecimentos/{estabelecimentoId}/categorias/{id}',
+        delete: '/api/categorias/estabelecimentos/{estabelecimentoId}/categorias/{id}',
+        validate: '/api/categorias/estabelecimentos/{estabelecimentoId}/categorias/validate-name',
+        deletionValidation: '/api/categorias/estabelecimentos/{estabelecimentoId}/categorias/{id}/validate-deletion'
       }
     } as ApiEndpoints
   };
