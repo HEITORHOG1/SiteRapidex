@@ -66,8 +66,22 @@
         <h1 class="page-title">Dashboard</h1>
         <p class="page-subtitle">Bem-vindo de volta, {{ userName }}!</p>
         
-        <!-- Seleção de Estabelecimento -->
-        <div class="estabelecimento-selector" *ngIf="authService.isProprietario() && estabelecimentos.length > 0">
+        <!-- Current Establishment Display -->
+        <div class="current-establishment" *ngIf="authService.isProprietario() && selectedEstabelecimento && !showEstabelecimentoSelector">
+          <div class="establishment-info">
+            <span class="establishment-icon">🏪</span>
+            <div class="establishment-details">
+              <span class="establishment-name">{{ selectedEstabelecimento.nomeFantasia }}</span>
+              <span class="establishment-address">{{ selectedEstabelecimento.endereco }}, {{ selectedEstabelecimento.numero }}</span>
+            </div>
+            <button type="button" class="change-establishment-btn" (click)="changeEstabelecimento()">
+              Alterar
+            </button>
+          </div>
+        </div>
+
+        <!-- Legacy Dropdown (fallback) -->
+        <div class="estabelecimento-selector-legacy" *ngIf="authService.isProprietario() && estabelecimentos.length > 0 && !selectedEstabelecimento && !showEstabelecimentoSelector">
           <label for="estabelecimento-select" class="selector-label">
             <span class="label-icon">🏪</span>
             Estabelecimento:
@@ -75,7 +89,7 @@
           <select 
             id="estabelecimento-select" 
             class="estabelecimento-select"
-            [value]="selectedEstabelecimento?.id || ''"
+            [value]="getSelectedEstabelecimentoId()"
             (change)="onEstabelecimentoChange($any($event.target).value)"
             [disabled]="isLoadingEstabelecimentos">
             <option value="" disabled>
@@ -86,17 +100,9 @@
             </option>
           </select>
           
-          <!-- Loading indicator -->
-          <div class="loading-indicator" *ngIf="isLoadingEstabelecimentos">
-            <span class="loading-spinner">⏳</span>
-            Carregando estabelecimentos...
-          </div>
-          
-          <!-- Error message -->
-          <div class="error-message" *ngIf="estabelecimentoError">
-            <span class="error-icon">⚠️</span>
-            {{ estabelecimentoError }}
-          </div>
+          <button type="button" class="show-selector-btn" (click)="showSelector()">
+            Ver todos
+          </button>
         </div>
       </div>
       <div class="header-right">
@@ -113,8 +119,44 @@
 
     <!-- Dashboard Content -->
     <div class="dashboard-content">
+      <!-- Establishment Selector Modal/Overlay -->
+      <div class="establishment-selector-overlay" *ngIf="showEstabelecimentoSelector" (click)="hideSelector()">
+        <div class="establishment-selector-modal" (click)="$event.stopPropagation()">
+          <div class="modal-header">
+            <h2>Selecionar Estabelecimento</h2>
+            <button type="button" class="close-btn" (click)="hideSelector()">×</button>
+          </div>
+          <div class="modal-content">
+            <app-estabelecimento-selector
+              [estabelecimentos]="estabelecimentos"
+              [selectedEstabelecimento]="selectedEstabelecimento"
+              [isLoading]="isLoadingEstabelecimentos"
+              [error]="estabelecimentoError"
+              (estabelecimentoSelected)="onEstabelecimentoSelected($event)"
+              (viewDetails)="onViewEstabelecimentoDetails($event)"
+              (retry)="onRetryLoadEstabelecimentos()">
+            </app-estabelecimento-selector>
+          </div>
+        </div>
+      </div>
+
+      <!-- Stats Loading State -->
+      <div class="stats-loading" *ngIf="isLoadingStats">
+        <rx-loading-spinner size="large" message="Carregando estatísticas..."></rx-loading-spinner>
+      </div>
+
+      <!-- Stats Error State -->
+      <div class="stats-error" *ngIf="statsError && !isLoadingStats">
+        <rx-error-message
+          [message]="statsError"
+          type="error"
+          [showRetry]="true"
+          (retry)="onRetryLoadStats()">
+        </rx-error-message>
+      </div>
+
       <!-- Stats Cards -->
-      <div class="stats-grid">
+      <div class="stats-grid" *ngIf="!isLoadingStats && !statsError">
         <div class="stat-card" *ngFor="let stat of stats">
           <div class="stat-header">
             <div class="stat-title">{{ stat.title }}</div>

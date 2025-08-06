@@ -1,29 +1,141 @@
 <section class="login-container">
   <div class="login-card">
-    <h1 class="title">Acessar o sistema</h1>
-    <form (ngSubmit)="onSubmit()" #f="ngForm" novalidate>
+    <div class="login-header">
+      <h1 class="title">Acessar o sistema</h1>
+      <p class="subtitle">Entre com suas credenciais para continuar</p>
+    </div>
+
+    <form [formGroup]="loginForm" (ngSubmit)="onSubmit()" novalidate class="login-form">
+      <!-- Username Field -->
       <div class="form-field">
-        <label for="username">Usuário</label>
-        <input id="username" name="username" [(ngModel)]="username" required autocomplete="username" />
-      </div>
-      <div class="form-field password-field">
-        <label for="password">Senha</label>
-        <div class="password-wrapper">
+        <label for="username" class="form-label">
+          Usuário <span class="required-indicator" aria-label="obrigatório">*</span>
+        </label>
+        <div class="input-wrapper">
           <input
-            id="password"
-            [type]="showPassword ? 'text' : 'password'"
-            name="password"
-            [(ngModel)]="password"
-            required
-            autocomplete="current-password"
+            id="username"
+            type="text"
+            formControlName="username"
+            autocomplete="username"
+            class="form-input"
+            [class.error]="isFieldInvalid('username')"
+            [attr.aria-describedby]="getAriaDescribedBy('username')"
+            [attr.aria-invalid]="getAriaInvalid('username')"
+            placeholder="Digite seu usuário"
           />
-          <button type="button" class="eye-btn" (click)="togglePassword()" [attr.aria-pressed]="showPassword">
-            {{ showPassword ? '🙈' : '👁️' }}
-          </button>
+          <div class="input-icon" *ngIf="!isFieldInvalid('username') && loginForm.get('username')?.value">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M20 6L9 17l-5-5"/>
+            </svg>
+          </div>
+        </div>
+        <div 
+          *ngIf="isFieldInvalid('username')" 
+          [id]="'username-error'"
+          class="field-error"
+          role="alert"
+          aria-live="polite"
+        >
+          {{ getFieldError('username') }}
         </div>
       </div>
-      <button class="btn primary" type="submit" [disabled]="loading()">Entrar</button>
-      <p class="error" *ngIf="error()">{{ error() }}</p>
+
+      <!-- Password Field -->
+      <div class="form-field">
+        <label for="password" class="form-label">
+          Senha <span class="required-indicator" aria-label="obrigatório">*</span>
+        </label>
+        <div class="input-wrapper password-wrapper">
+          <input
+            id="password"
+            [type]="showPassword() ? 'text' : 'password'"
+            formControlName="password"
+            autocomplete="current-password"
+            class="form-input"
+            [class.error]="isFieldInvalid('password')"
+            [attr.aria-describedby]="getAriaDescribedBy('password')"
+            [attr.aria-invalid]="getAriaInvalid('password')"
+            placeholder="Digite sua senha"
+          />
+          <button 
+            type="button" 
+            class="password-toggle"
+            (click)="togglePassword()"
+            [attr.aria-pressed]="showPassword()"
+            [attr.aria-label]="showPassword() ? 'Ocultar senha' : 'Mostrar senha'"
+          >
+            <svg 
+              *ngIf="!showPassword()" 
+              width="20" 
+              height="20" 
+              viewBox="0 0 24 24" 
+              fill="none" 
+              stroke="currentColor" 
+              stroke-width="2"
+            >
+              <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+              <circle cx="12" cy="12" r="3"/>
+            </svg>
+            <svg 
+              *ngIf="showPassword()" 
+              width="20" 
+              height="20" 
+              viewBox="0 0 24 24" 
+              fill="none" 
+              stroke="currentColor" 
+              stroke-width="2"
+            >
+              <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/>
+              <line x1="1" y1="1" x2="23" y2="23"/>
+            </svg>
+          </button>
+        </div>
+        <div 
+          *ngIf="isFieldInvalid('password')" 
+          [id]="'password-error'"
+          class="field-error"
+          role="alert"
+          aria-live="polite"
+        >
+          {{ getFieldError('password') }}
+        </div>
+      </div>
+
+      <!-- Submit Button -->
+      <button 
+        type="submit" 
+        class="submit-btn"
+        [disabled]="loading()"
+        [attr.aria-describedby]="loading() ? 'loading-message' : null"
+      >
+        <rx-loading-spinner 
+          *ngIf="loading()" 
+          size="small"
+          [attr.id]="'loading-message'"
+        ></rx-loading-spinner>
+        <span [class.visually-hidden]="loading()">
+          {{ loading() ? 'Entrando...' : 'Entrar' }}
+        </span>
+      </button>
+
+      <!-- Error Message -->
+      <rx-error-message
+        *ngIf="error()"
+        [message]="error()!"
+        type="error"
+        [showRetry]="true"
+        retryText="Tentar novamente"
+        (retry)="onRetryLogin()"
+        class="login-error"
+      ></rx-error-message>
     </form>
+
+    <!-- Additional Help -->
+    <div class="login-footer">
+      <p class="help-text">
+        Problemas para acessar? 
+        <a href="#" class="help-link">Entre em contato</a>
+      </p>
+    </div>
   </div>
 </section>

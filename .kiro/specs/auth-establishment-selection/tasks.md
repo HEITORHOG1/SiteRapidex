@@ -56,7 +56,7 @@
   - Write component unit tests
   - _Requirements: 3.2, 3.3, 4.1, 4.2, 4.3, 4.4, 5.1, 5.2, 6.5_
 
-- [ ] 9. Enhance LoginComponent with improved UX and error handling
+- [x] 9. Enhance LoginComponent with improved UX and error handling
   - Update existing LoginComponent to use new error handling
   - Add loading states and improved form validation
   - Implement elegant error message display
@@ -64,7 +64,7 @@
   - Update component tests
   - _Requirements: 1.1, 1.2, 1.3, 1.4, 1.5, 5.1, 5.2, 5.3, 5.4, 5.5_
 
-- [ ] 10. Enhance DashboardComponent with establishment selection UI
+- [x] 10. Enhance DashboardComponent with establishment selection UI
   - Update existing DashboardComponent to use new EstabelecimentoSelectorComponent
   - Implement establishment selection flow with visual feedback
   - Add loading states for establishment data
