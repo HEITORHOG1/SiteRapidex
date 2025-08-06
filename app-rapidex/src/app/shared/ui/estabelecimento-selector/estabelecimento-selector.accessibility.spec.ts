@@ -10,6 +10,7 @@ describe('EstabelecimentoSelectorComponent - Accessibility', () => {
   const mockEstabelecimentos: Estabelecimento[] = [
     {
       id: 1,
+      usuarioId: 'user-123',
       nomeFantasia: 'Restaurante Teste 1',
       razaoSocial: 'Teste Ltda 1',
       cnpj: '12345678000195',
@@ -18,12 +19,16 @@ describe('EstabelecimentoSelectorComponent - Accessibility', () => {
       cep: '12345-678',
       telefone: '11999999999',
       status: true,
+      dataCadastro: '2024-01-01T00:00:00Z',
+      latitude: -23.5505,
+      longitude: -46.6333,
       descricao: 'Restaurante de teste',
       raioEntregaKm: 5,
       taxaEntregaFixa: 5.00
     },
     {
       id: 2,
+      usuarioId: 'user-123',
       nomeFantasia: 'Restaurante Teste 2',
       razaoSocial: 'Teste Ltda 2',
       cnpj: '12345678000196',
@@ -32,6 +37,9 @@ describe('EstabelecimentoSelectorComponent - Accessibility', () => {
       cep: '12345-679',
       telefone: '11888888888',
       status: false,
+      dataCadastro: '2024-01-02T00:00:00Z',
+      latitude: -23.5506,
+      longitude: -46.6334,
       descricao: 'Segundo restaurante de teste',
       raioEntregaKm: 3,
       taxaEntregaFixa: 3.50

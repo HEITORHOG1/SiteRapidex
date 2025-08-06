@@ -9,6 +9,7 @@ describe('EstabelecimentoCardComponent - Accessibility', () => {
 
   const mockEstabelecimento: Estabelecimento = {
     id: 1,
+    usuarioId: 'user-123',
     nomeFantasia: 'Restaurante Teste',
     razaoSocial: 'Teste Ltda',
     cnpj: '12345678000195',
@@ -17,6 +18,9 @@ describe('EstabelecimentoCardComponent - Accessibility', () => {
     cep: '12345-678',
     telefone: '11999999999',
     status: true,
+    dataCadastro: '2024-01-01T00:00:00Z',
+    latitude: -23.5505,
+    longitude: -46.6333,
     descricao: 'Restaurante de teste para verificar acessibilidade',
     raioEntregaKm: 5,
     taxaEntregaFixa: 5.00
