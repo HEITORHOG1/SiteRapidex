@@ -1,4 +1,19 @@
 // Animation utilities and keyframes
+// Performance optimizations
+.will-change-auto { will-change: auto; }
+.will-change-scroll { will-change: scroll-position; }
+.will-change-contents { will-change: contents; }
+.will-change-transform { will-change: transform; }
+.will-change-opacity { will-change: opacity; }
+
+// CSS Containment for performance
+.contain-none { contain: none; }
+.contain-strict { contain: strict; }
+.contain-content { contain: content; }
+.contain-size { contain: size; }
+.contain-layout { contain: layout; }
+.contain-style { contain: style; }
+.contain-paint { contain: paint; }
 
 // Entrance animations
 @keyframes fadeIn {
@@ -550,45 +565,55 @@
   }
 }
 
-// Utility animation classes
+// Utility animation classes with performance optimizations
 .animate-fade-in {
   animation: fadeIn $duration-300 $ease-out;
+  will-change: opacity, transform;
 }
 
 .animate-fade-in-up {
   animation: fadeInUp $duration-500 $ease-out;
+  will-change: opacity, transform;
 }
 
 .animate-fade-in-down {
   animation: fadeInDown $duration-500 $ease-out;
+  will-change: opacity, transform;
 }
 
 .animate-fade-in-left {
   animation: fadeInLeft $duration-500 $ease-out;
+  will-change: opacity, transform;
 }
 
 .animate-fade-in-right {
   animation: fadeInRight $duration-500 $ease-out;
+  will-change: opacity, transform;
 }
 
 .animate-scale-in {
   animation: scaleIn $duration-200 $ease-out;
+  will-change: transform;
 }
 
 .animate-slide-in-up {
   animation: slideInUp $duration-300 $ease-out;
+  will-change: opacity, transform;
 }
 
 .animate-slide-in-down {
   animation: slideInDown $duration-300 $ease-out;
+  will-change: opacity, transform;
 }
 
 .animate-slide-in-left {
   animation: slideInLeft $duration-300 $ease-out;
+  will-change: opacity, transform;
 }
 
 .animate-slide-in-right {
   animation: slideInRight $duration-300 $ease-out;
+  will-change: opacity, transform;
 }
 
 .animate-bounce {

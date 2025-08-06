@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy, HostListener } from '@angular/core';
+import { Component, OnInit, OnDestroy, HostListener, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
@@ -22,7 +22,8 @@ import { takeUntil } from 'rxjs/operators';
     ErrorMessageComponent
   ],
   templateUrl: './dashboard.component.html',
-  styleUrls: ['./dashboard.component.scss']
+  styleUrls: ['./dashboard.component.scss'],
+  changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class DashboardComponent implements OnInit, OnDestroy {
   private destroy$ = new Subject<void>();
@@ -104,7 +105,8 @@ export class DashboardComponent implements OnInit, OnDestroy {
   constructor(
     public authService: AuthService,
     private estabelecimentoService: EstabelecimentoService,
-    private router: Router
+    private router: Router,
+    private cdr: ChangeDetectorRef
   ) {
     this.checkScreenSize();
   }
@@ -152,6 +154,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
         if (!state.token) {
           this.router.navigate(['/auth/login']);
         }
+        this.cdr.markForCheck();
       });
   }
 
@@ -164,6 +167,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
       .pipe(takeUntil(this.destroy$))
       .subscribe((estabelecimentos: Estabelecimento[]) => {
         this.estabelecimentos = estabelecimentos;
+        this.cdr.markForCheck();
       });
 
     // Escuta mudanças no estabelecimento selecionado
@@ -175,6 +179,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
           this.loadStatsForEstabelecimento(estabelecimento);
           this.showEstabelecimentoSelector = false;
         }
+        this.cdr.markForCheck();
       });
   }
 
@@ -207,11 +212,13 @@ export class DashboardComponent implements OnInit, OnDestroy {
           if (!this.selectedEstabelecimento && estabelecimentos.length > 0) {
             this.showEstabelecimentoSelector = true;
           }
+          this.cdr.markForCheck();
         },
         error: (error: any) => {
           this.isLoadingEstabelecimentos = false;
           this.estabelecimentoError = error.message || 'Erro ao carregar estabelecimentos';
           console.error('Erro ao carregar estabelecimentos:', error);
+          this.cdr.markForCheck();
         }
       });
   }
@@ -288,6 +295,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
   private loadStatsForEstabelecimento(estabelecimento: Estabelecimento): void {
     this.isLoadingStats = true;
     this.statsError = null;
+    this.cdr.markForCheck();
     
     console.log('Carregando estatísticas para estabelecimento:', estabelecimento.nomeFantasia);
     
@@ -296,10 +304,12 @@ export class DashboardComponent implements OnInit, OnDestroy {
       try {
         this.updateStatsForEstabelecimento(estabelecimento);
         this.isLoadingStats = false;
+        this.cdr.markForCheck();
       } catch (error) {
         this.isLoadingStats = false;
         this.statsError = 'Erro ao carregar estatísticas do estabelecimento';
         console.error('Erro ao carregar estatísticas:', error);
+        this.cdr.markForCheck();
       }
     }, 1500); // Simulate network delay
   }
@@ -420,5 +430,22 @@ export class DashboardComponent implements OnInit, OnDestroy {
     this.estabelecimentoService.clearEstabelecimentos();
     this.authService.logout();
     this.router.navigate(['/auth/login']);
+  }
+
+  // TrackBy functions for performance optimization
+  trackByEstabelecimento(index: number, estabelecimento: Estabelecimento): number {
+    return estabelecimento.id;
+  }
+
+  trackByStat(index: number, stat: any): string {
+    return stat.title;
+  }
+
+  trackByActivity(index: number, activity: any): string {
+    return activity.title + activity.time;
+  }
+
+  trackByQuickAction(index: number, action: any): string {
+    return action.action;
   }
 }

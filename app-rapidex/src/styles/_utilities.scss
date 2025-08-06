@@ -264,24 +264,111 @@
 .transition-shadow { transition: box-shadow $transition-normal !important; }
 .transition-transform { transition: transform $transition-normal !important; }
 
-// Transform utilities
-.transform { transform: translateX(0) translateY(0) rotate(0) skewX(0) skewY(0) scaleX(1) scaleY(1) !important; }
-.transform-none { transform: none !important; }
+// Transform utilities with performance optimizations
+.transform { 
+  transform: translateX(0) translateY(0) rotate(0) skewX(0) skewY(0) scaleX(1) scaleY(1) !important;
+  will-change: transform;
+}
+.transform-none { 
+  transform: none !important; 
+  will-change: auto;
+}
 
-.scale-0 { transform: scale(0) !important; }
-.scale-50 { transform: scale(0.5) !important; }
-.scale-75 { transform: scale(0.75) !important; }
-.scale-90 { transform: scale(0.9) !important; }
-.scale-95 { transform: scale(0.95) !important; }
-.scale-100 { transform: scale(1) !important; }
-.scale-105 { transform: scale(1.05) !important; }
-.scale-110 { transform: scale(1.1) !important; }
-.scale-125 { transform: scale(1.25) !important; }
+.scale-0 { 
+  transform: scale(0) !important; 
+  will-change: transform;
+}
+.scale-50 { 
+  transform: scale(0.5) !important; 
+  will-change: transform;
+}
+.scale-75 { 
+  transform: scale(0.75) !important; 
+  will-change: transform;
+}
+.scale-90 { 
+  transform: scale(0.9) !important; 
+  will-change: transform;
+}
+.scale-95 { 
+  transform: scale(0.95) !important; 
+  will-change: transform;
+}
+.scale-100 { 
+  transform: scale(1) !important; 
+  will-change: auto;
+}
+.scale-105 { 
+  transform: scale(1.05) !important; 
+  will-change: transform;
+}
+.scale-110 { 
+  transform: scale(1.1) !important; 
+  will-change: transform;
+}
+.scale-125 { 
+  transform: scale(1.25) !important; 
+  will-change: transform;
+}
 
-.rotate-0 { transform: rotate(0deg) !important; }
-.rotate-45 { transform: rotate(45deg) !important; }
-.rotate-90 { transform: rotate(90deg) !important; }
-.rotate-180 { transform: rotate(180deg) !important; }
+.rotate-0 { 
+  transform: rotate(0deg) !important; 
+  will-change: auto;
+}
+.rotate-45 { 
+  transform: rotate(45deg) !important; 
+  will-change: transform;
+}
+.rotate-90 { 
+  transform: rotate(90deg) !important; 
+  will-change: transform;
+}
+.rotate-180 { 
+  transform: rotate(180deg) !important; 
+  will-change: transform;
+}
+
+// Performance utilities
+.will-change-auto { will-change: auto !important; }
+.will-change-scroll { will-change: scroll-position !important; }
+.will-change-contents { will-change: contents !important; }
+.will-change-transform { will-change: transform !important; }
+.will-change-opacity { will-change: opacity !important; }
+
+// CSS Containment for performance
+.contain-none { contain: none !important; }
+.contain-strict { contain: strict !important; }
+.contain-content { contain: content !important; }
+.contain-size { contain: size !important; }
+.contain-layout { contain: layout !important; }
+.contain-style { contain: style !important; }
+.contain-paint { contain: paint !important; }
+
+// GPU acceleration utilities
+.gpu-accelerated {
+  transform: translateZ(0) !important;
+  backface-visibility: hidden !important;
+  perspective: 1000px !important;
+}
+
+// Smooth scrolling optimization
+.smooth-scroll {
+  scroll-behavior: smooth !important;
+  -webkit-overflow-scrolling: touch !important;
+}
+
+// Text rendering optimization
+.optimize-text {
+  text-rendering: optimizeSpeed !important;
+  -webkit-font-smoothing: antialiased !important;
+  -moz-osx-font-smoothing: grayscale !important;
+}
+
+// Image rendering optimization
+.optimize-images {
+  image-rendering: -webkit-optimize-contrast !important;
+  image-rendering: crisp-edges !important;
+}
 
 // Responsive utilities
 @include tablet-up {

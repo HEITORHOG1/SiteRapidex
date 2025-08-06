@@ -6,6 +6,8 @@
   max-width: 1200px;
   margin: 0 auto;
   padding: $spacing-lg;
+  contain: layout style;
+  will-change: auto;
 
   &__loading,
   &__error {
@@ -106,9 +108,15 @@
 
   &__card {
     transition: transform $transition-normal, box-shadow $transition-normal;
+    contain: layout style;
+    will-change: transform, box-shadow;
 
     &:hover {
       transform: translateY(-2px);
+    }
+
+    &:not(:hover) {
+      will-change: auto;
     }
   }
 

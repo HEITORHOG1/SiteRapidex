@@ -138,7 +138,7 @@
             <option value="" disabled>
               {{ isLoadingEstabelecimentos ? 'Carregando...' : 'Selecione um estabelecimento' }}
             </option>
-            <option *ngFor="let estabelecimento of estabelecimentos" [value]="estabelecimento.id">
+            <option *ngFor="let estabelecimento of estabelecimentos; trackBy: trackByEstabelecimento" [value]="estabelecimento.id">
               {{ estabelecimento.nomeFantasia }} - {{ estabelecimento.razaoSocial }}
             </option>
           </select>
@@ -227,7 +227,7 @@
 
       <!-- Stats Cards -->
       <div class="stats-grid" *ngIf="!isLoadingStats && !statsError" role="region" aria-label="Estatísticas do estabelecimento">
-        <div class="stat-card" *ngFor="let stat of stats; let i = index" [attr.aria-labelledby]="'stat-title-' + i">
+        <div class="stat-card" *ngFor="let stat of stats; let i = index; trackBy: trackByStat" [attr.aria-labelledby]="'stat-title-' + i">
           <div class="stat-header">
             <div class="stat-title" [id]="'stat-title-' + i">{{ stat.title }}</div>
             <div class="stat-icon" aria-hidden="true">{{ stat.icon }}</div>
@@ -245,7 +245,7 @@
         <div class="activity-section">
           <h2 class="section-title">Atividades Recentes</h2>
           <div class="activity-list">
-            <div class="activity-item" *ngFor="let activity of recentActivities">
+            <div class="activity-item" *ngFor="let activity of recentActivities; trackBy: trackByActivity">
               <div class="activity-icon">{{ activity.icon }}</div>
               <div class="activity-content">
                 <h4>{{ activity.title }}</h4>
@@ -260,7 +260,7 @@
         <div class="quick-actions">
           <h2 class="section-title">Ações Rápidas</h2>
           <div class="action-grid">
-            <button class="action-btn" *ngFor="let action of quickActions" (click)="onQuickAction(action.action)">
+            <button class="action-btn" *ngFor="let action of quickActions; trackBy: trackByQuickAction" (click)="onQuickAction(action.action)">
               <span class="action-icon">{{ action.icon }}</span>
               <span class="action-text">{{ action.text }}</span>
             </button>

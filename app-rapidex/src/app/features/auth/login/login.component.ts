@@ -1,4 +1,4 @@
-import { Component, inject, signal, OnInit, OnDestroy } from "@angular/core";
+import { Component, inject, signal, OnInit, OnDestroy, ChangeDetectionStrategy } from "@angular/core";
 import { CommonModule } from "@angular/common";
 import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from "@angular/forms";
 import { Router } from "@angular/router";
@@ -18,7 +18,8 @@ import { LoadingSpinnerComponent } from "@shared/ui/loading/loading";
     LoadingSpinnerComponent
   ],
   templateUrl: "./login.component.html",
-  styleUrls: ["./login.component.scss"]
+  styleUrls: ["./login.component.scss"],
+  changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class LoginComponent implements OnInit, OnDestroy {
   private auth = inject(AuthService);
