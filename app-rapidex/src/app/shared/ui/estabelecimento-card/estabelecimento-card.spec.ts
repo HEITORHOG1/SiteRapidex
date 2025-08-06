@@ -295,6 +295,163 @@ describe('EstabelecimentoCardComponent', () => {
     });
   });
 
+  describe('Error Scenarios', () => {
+    it('should handle null estabelecimento gracefully', () => {
+      component.estabelecimento = null as any;
+      fixture.detectChanges();
+
+      expect(() => component.formatPhone()).not.toThrow();
+      expect(() => component.formatCnpj()).not.toThrow();
+      expect(() => component.formatAddress()).not.toThrow();
+      expect(component.formatAddress()).toBe('');
+    });
+
+    it('should handle undefined estabelecimento properties', () => {
+      component.estabelecimento = {
+        ...mockEstabelecimento,
+        telefone: undefined as any,
+        cnpj: undefined as any,
+        endereco: undefined as any
+      };
+
+      expect(() => component.formatPhone()).not.toThrow();
+      expect(() => component.formatCnpj()).not.toThrow();
+      expect(() => component.formatAddress()).not.toThrow();
+    });
+
+    it('should handle malformed CNPJ', () => {
+      const testCases = ['', '123', '12345678901234567890', 'abcd1234567890'];
+      
+      testCases.forEach(cnpj => {
+        component.estabelecimento = { ...mockEstabelecimento, cnpj };
+        expect(component.formatCnpj()).toBe(cnpj);
+      });
+    });
+
+    it('should handle malformed phone numbers', () => {
+      const testCases = ['', '123', '12345678901234567890', 'abcd1234567890'];
+      
+      testCases.forEach(telefone => {
+        component.estabelecimento = { ...mockEstabelecimento, telefone };
+        expect(component.formatPhone()).toBe(telefone);
+      });
+    });
+
+    it('should prevent event propagation on details button click', () => {
+      const mockEvent = {
+        stopPropagation: jasmine.createSpy('stopPropagation')
+      };
+      spyOn(component.viewDetails, 'emit');
+
+      component.onViewDetails(mockEvent as any);
+
+      expect(mockEvent.stopPropagation).toHaveBeenCalled();
+      expect(component.viewDetails.emit).toHaveBeenCalledWith(mockEstabelecimento);
+    });
+  });
+
+  describe('Loading State Variations', () => {
+    it('should show different skeleton elements when loading', () => {
+      component.isLoading = true;
+      fixture.detectChanges();
+
+      const skeletonTitle = fixture.debugElement.query(By.css('.skeleton-title'));
+      const skeletonText = fixture.debugElement.queryAll(By.css('.skeleton-text'));
+      const skeletonButton = fixture.debugElement.query(By.css('.skeleton-button'));
+
+      expect(skeletonTitle).toBeTruthy();
+      expect(skeletonText.length).toBeGreaterThan(0);
+      expect(skeletonButton).toBeTruthy();
+    });
+
+    it('should disable interactions during loading', () => {
+      component.isLoading = true;
+      spyOn(component.select, 'emit');
+      spyOn(component.viewDetails, 'emit');
+
+      // Try to trigger events
+      component.onCardClick();
+      component.onViewDetails({ stopPropagation: () => {} } as any);
+
+      expect(component.select.emit).not.toHaveBeenCalled();
+      expect(component.viewDetails.emit).not.toHaveBeenCalled();
+    });
+
+    it('should have proper loading accessibility attributes', () => {
+      component.isLoading = true;
+      fixture.detectChanges();
+
+      const cardElement = fixture.debugElement.query(By.css('.estabelecimento-card'));
+      
+      expect(cardElement.nativeElement.getAttribute('aria-busy')).toBe('true');
+      expect(cardElement.nativeElement.getAttribute('aria-label')).toContain('Carregando');
+    });
+  });
+
+  describe('Selection State Variations', () => {
+    it('should handle rapid selection state changes', () => {
+      // Rapidly toggle selection
+      component.isSelected = false;
+      fixture.detectChanges();
+      
+      component.isSelected = true;
+      fixture.detectChanges();
+      
+      component.isSelected = false;
+      fixture.detectChanges();
+
+      const cardElement = fixture.debugElement.query(By.css('.estabelecimento-card'));
+      expect(cardElement.nativeElement).not.toHaveClass('estabelecimento-card--selected');
+    });
+
+    it('should maintain selection visual state correctly', () => {
+      component.isSelected = true;
+      fixture.detectChanges();
+
+      const cardElement = fixture.debugElement.query(By.css('.estabelecimento-card'));
+      const selectionIndicator = fixture.debugElement.query(By.css('.estabelecimento-card__selection-indicator'));
+
+      expect(cardElement.nativeElement).toHaveClass('estabelecimento-card--selected');
+      expect(selectionIndicator).toBeTruthy();
+      expect(cardElement.nativeElement.getAttribute('aria-selected')).toBe('true');
+    });
+  });
+
+  describe('Keyboard Navigation', () => {
+    it('should handle Enter key correctly', () => {
+      spyOn(component.select, 'emit');
+      
+      const cardElement = fixture.debugElement.query(By.css('.estabelecimento-card'));
+      const enterEvent = new KeyboardEvent('keydown', { key: 'Enter' });
+      
+      cardElement.nativeElement.dispatchEvent(enterEvent);
+
+      expect(component.select.emit).toHaveBeenCalledWith(mockEstabelecimento);
+    });
+
+    it('should handle Space key correctly', () => {
+      spyOn(component.select, 'emit');
+      
+      const cardElement = fixture.debugElement.query(By.css('.estabelecimento-card'));
+      const spaceEvent = new KeyboardEvent('keydown', { key: ' ' });
+      
+      cardElement.nativeElement.dispatchEvent(spaceEvent);
+
+      expect(component.select.emit).toHaveBeenCalledWith(mockEstabelecimento);
+    });
+
+    it('should ignore other keys', () => {
+      spyOn(component.select, 'emit');
+      
+      const cardElement = fixture.debugElement.query(By.css('.estabelecimento-card'));
+      const tabEvent = new KeyboardEvent('keydown', { key: 'Tab' });
+      
+      cardElement.nativeElement.dispatchEvent(tabEvent);
+
+      expect(component.select.emit).not.toHaveBeenCalled();
+    });
+  });
+
   describe('Edge Cases', () => {
     it('should handle missing phone number', () => {
       component.estabelecimento = { ...mockEstabelecimento, telefone: '' };
@@ -328,6 +485,28 @@ describe('EstabelecimentoCardComponent', () => {
       expect(component.formatPhone()).toBe('');
       expect(component.formatCnpj()).toBe('');
       expect(component.formatAddress()).toBe(', - CEP: ');
+    });
+
+    it('should handle very long establishment names', () => {
+      const longName = 'A'.repeat(100);
+      component.estabelecimento = { ...mockEstabelecimento, nomeFantasia: longName };
+      fixture.detectChanges();
+
+      const titleElement = fixture.debugElement.query(By.css('.estabelecimento-card__title'));
+      expect(titleElement.nativeElement.textContent.trim()).toBe(longName);
+    });
+
+    it('should handle special characters in establishment data', () => {
+      component.estabelecimento = {
+        ...mockEstabelecimento,
+        nomeFantasia: 'Café & Açaí',
+        razaoSocial: 'Empresa Ção & Cia LTDA',
+        endereco: 'Rua São João, 123'
+      };
+      fixture.detectChanges();
+
+      const titleElement = fixture.debugElement.query(By.css('.estabelecimento-card__title'));
+      expect(titleElement.nativeElement.textContent.trim()).toBe('Café & Açaí');
     });
   });
 });

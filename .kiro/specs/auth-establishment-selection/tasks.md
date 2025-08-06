@@ -93,14 +93,14 @@
   - Test token refresh functionality
   - _Requirements: 1.1, 1.2, 1.3, 1.4, 2.1, 2.2, 2.3, 2.4, 6.1, 6.2, 6.3, 6.4_
 
-- [ ] 14. Create comprehensive unit tests for establishment selection
+- [x] 14. Create comprehensive unit tests for establishment selection
   - Write unit tests for EstabelecimentoService enhancements
   - Test EstabelecimentoCardComponent and EstabelecimentoSelectorComponent
   - Create tests for dashboard integration
   - Test error scenarios and loading states
   - _Requirements: 3.1, 3.2, 3.3, 3.4, 3.5, 4.1, 4.2, 4.3, 4.4, 4.5, 6.1, 6.2_
 
-- [ ] 15. Implement end-to-end integration testing
+- [-] 15. Implement end-to-end integration testing
   - Create E2E test for complete authentication flow
   - Test establishment selection and dashboard navigation
   - Verify responsive behavior on different screen sizes

@@ -399,6 +399,261 @@ describe('EstabelecimentoSelectorComponent', () => {
     });
   });
 
+  describe('Error Scenarios', () => {
+    it('should handle different error types correctly', () => {
+      const errorTypes = [
+        'Erro de rede',
+        'Erro de autenticação',
+        'Erro interno do servidor',
+        'Dados inválidos'
+      ];
+
+      errorTypes.forEach(errorMessage => {
+        component.error = errorMessage;
+        component.isLoading = false;
+        fixture.detectChanges();
+
+        const errorElement = fixture.debugElement.query(By.css('rx-error-message'));
+        expect(errorElement.componentInstance.message).toBe(errorMessage);
+      });
+    });
+
+    it('should handle error state transitions correctly', () => {
+      // Start with error
+      component.error = 'Initial error';
+      component.isLoading = false;
+      fixture.detectChanges();
+
+      expect(component.showError).toBe(true);
+
+      // Clear error and start loading
+      component.error = null;
+      component.isLoading = true;
+      fixture.detectChanges();
+
+      expect(component.showError).toBe(false);
+      expect(component.isLoading).toBe(true);
+
+      // Complete loading with data
+      component.isLoading = false;
+      component.estabelecimentos = mockEstabelecimentos;
+      fixture.detectChanges();
+
+      expect(component.showContent).toBe(true);
+    });
+
+    it('should emit retry event multiple times', () => {
+      spyOn(component.retry, 'emit');
+      component.error = 'Network error';
+      component.isLoading = false;
+      fixture.detectChanges();
+
+      const errorElement = fixture.debugElement.query(By.css('rx-error-message'));
+      
+      // Emit retry multiple times
+      errorElement.componentInstance.retry.emit();
+      errorElement.componentInstance.retry.emit();
+      errorElement.componentInstance.retry.emit();
+
+      expect(component.retry.emit).toHaveBeenCalledTimes(3);
+    });
+  });
+
+  describe('Loading State Variations', () => {
+    it('should show loading with different messages', () => {
+      component.isLoading = true;
+      fixture.detectChanges();
+
+      const loadingElement = fixture.debugElement.query(By.css('rx-loading-spinner'));
+      expect(loadingElement.componentInstance.message).toBe('Carregando estabelecimentos...');
+    });
+
+    it('should handle loading state with existing data', () => {
+      // Start with data
+      component.estabelecimentos = mockEstabelecimentos;
+      component.isLoading = false;
+      fixture.detectChanges();
+
+      expect(component.showContent).toBe(true);
+
+      // Start loading again (refresh)
+      component.isLoading = true;
+      fixture.detectChanges();
+
+      expect(component.showContent).toBe(false);
+      expect(component.isLoading).toBe(true);
+    });
+
+    it('should handle rapid loading state changes', () => {
+      // Rapid state changes
+      component.isLoading = true;
+      fixture.detectChanges();
+      
+      component.isLoading = false;
+      component.estabelecimentos = mockEstabelecimentos;
+      fixture.detectChanges();
+      
+      component.isLoading = true;
+      fixture.detectChanges();
+
+      expect(component.showContent).toBe(false);
+      expect(component.isLoading).toBe(true);
+    });
+  });
+
+  describe('Selection State Management', () => {
+    beforeEach(() => {
+      component.estabelecimentos = mockEstabelecimentos;
+      component.isLoading = false;
+      component.error = null;
+      fixture.detectChanges();
+    });
+
+    it('should handle selection changes correctly', () => {
+      // No selection initially
+      expect(component.isSelected(mockEstabelecimentos[0])).toBe(false);
+      expect(component.isSelected(mockEstabelecimentos[1])).toBe(false);
+
+      // Select first
+      component.selectedEstabelecimento = mockEstabelecimentos[0];
+      fixture.detectChanges();
+
+      expect(component.isSelected(mockEstabelecimentos[0])).toBe(true);
+      expect(component.isSelected(mockEstabelecimentos[1])).toBe(false);
+
+      // Change selection
+      component.selectedEstabelecimento = mockEstabelecimentos[1];
+      fixture.detectChanges();
+
+      expect(component.isSelected(mockEstabelecimentos[0])).toBe(false);
+      expect(component.isSelected(mockEstabelecimentos[1])).toBe(true);
+    });
+
+    it('should handle selection with null/undefined estabelecimento', () => {
+      component.selectedEstabelecimento = mockEstabelecimentos[0];
+      
+      expect(component.isSelected(null as any)).toBe(false);
+      expect(component.isSelected(undefined as any)).toBe(false);
+    });
+
+    it('should show selection summary with correct data', () => {
+      component.selectedEstabelecimento = mockEstabelecimentos[0];
+      fixture.detectChanges();
+
+      const summaryElement = fixture.debugElement.query(By.css('.estabelecimento-selector__summary'));
+      const nameElement = fixture.debugElement.query(By.css('.selection-summary__name'));
+      const statusElement = fixture.debugElement.query(By.css('.selection-summary__status'));
+
+      expect(summaryElement).toBeTruthy();
+      expect(nameElement.nativeElement.textContent.trim()).toBe(mockEstabelecimentos[0].nomeFantasia);
+      expect(statusElement.nativeElement.textContent.trim()).toContain('Ativo');
+    });
+  });
+
+  describe('View Mode Functionality', () => {
+    beforeEach(() => {
+      component.estabelecimentos = mockEstabelecimentos;
+      component.isLoading = false;
+      component.error = null;
+      fixture.detectChanges();
+    });
+
+    it('should apply correct CSS classes for view modes', () => {
+      // Grid mode
+      component.viewMode = 'grid';
+      fixture.detectChanges();
+
+      let gridElement = fixture.debugElement.query(By.css('.estabelecimento-selector__grid'));
+      expect(gridElement.nativeElement).toHaveClass('estabelecimento-selector__grid--grid');
+
+      // List mode
+      component.viewMode = 'list';
+      fixture.detectChanges();
+
+      gridElement = fixture.debugElement.query(By.css('.estabelecimento-selector__grid'));
+      expect(gridElement.nativeElement).toHaveClass('estabelecimento-selector__grid--list');
+    });
+
+    it('should maintain view mode state across data changes', () => {
+      // Set to list mode
+      const listButton = fixture.debugElement.queryAll(By.css('.view-toggle__button'))[1];
+      listButton.nativeElement.click();
+      fixture.detectChanges();
+
+      expect(component.viewMode).toBe('list');
+
+      // Change data
+      component.estabelecimentos = [...mockEstabelecimentos, mockEstabelecimentos[0]];
+      fixture.detectChanges();
+
+      // View mode should be preserved
+      expect(component.viewMode).toBe('list');
+    });
+
+    it('should handle view toggle button accessibility', () => {
+      const buttons = fixture.debugElement.queryAll(By.css('.view-toggle__button'));
+      
+      buttons.forEach(button => {
+        expect(button.nativeElement.getAttribute('type')).toBe('button');
+        expect(button.nativeElement.getAttribute('aria-label')).toBeTruthy();
+      });
+    });
+  });
+
+  describe('Event Handling', () => {
+    beforeEach(() => {
+      component.estabelecimentos = mockEstabelecimentos;
+      component.isLoading = false;
+      component.error = null;
+      fixture.detectChanges();
+    });
+
+    it('should handle multiple rapid selections', () => {
+      spyOn(component.estabelecimentoSelected, 'emit');
+      
+      const cardElements = fixture.debugElement.queryAll(By.css('app-estabelecimento-card'));
+      
+      // Rapid selections
+      cardElements[0].componentInstance.select.emit(mockEstabelecimentos[0]);
+      cardElements[1].componentInstance.select.emit(mockEstabelecimentos[1]);
+      cardElements[0].componentInstance.select.emit(mockEstabelecimentos[0]);
+
+      expect(component.estabelecimentoSelected.emit).toHaveBeenCalledTimes(3);
+    });
+
+    it('should handle view details for different estabelecimentos', () => {
+      spyOn(component.viewDetails, 'emit');
+      
+      const cardElements = fixture.debugElement.queryAll(By.css('app-estabelecimento-card'));
+      
+      cardElements[0].componentInstance.viewDetails.emit(mockEstabelecimentos[0]);
+      cardElements[1].componentInstance.viewDetails.emit(mockEstabelecimentos[1]);
+
+      expect(component.viewDetails.emit).toHaveBeenCalledWith(mockEstabelecimentos[0]);
+      expect(component.viewDetails.emit).toHaveBeenCalledWith(mockEstabelecimentos[1]);
+    });
+  });
+
+  describe('Performance Optimizations', () => {
+    it('should use trackBy function correctly', () => {
+      const trackByResult1 = component.trackByEstabelecimento(0, mockEstabelecimentos[0]);
+      const trackByResult2 = component.trackByEstabelecimento(1, mockEstabelecimentos[1]);
+
+      expect(trackByResult1).toBe(mockEstabelecimentos[0].id);
+      expect(trackByResult2).toBe(mockEstabelecimentos[1].id);
+      expect(trackByResult1).not.toBe(trackByResult2);
+    });
+
+    it('should handle trackBy with duplicate IDs', () => {
+      const duplicateEstabelecimento = { ...mockEstabelecimentos[0] };
+      
+      const trackByResult1 = component.trackByEstabelecimento(0, mockEstabelecimentos[0]);
+      const trackByResult2 = component.trackByEstabelecimento(1, duplicateEstabelecimento);
+
+      expect(trackByResult1).toBe(trackByResult2);
+    });
+  });
+
   describe('Edge Cases', () => {
     it('should handle null estabelecimentos array', () => {
       component.estabelecimentos = null as any;
@@ -422,6 +677,38 @@ describe('EstabelecimentoSelectorComponent', () => {
       fixture.detectChanges();
 
       expect(component.showError).toBe(false);
+    });
+
+    it('should handle estabelecimentos with missing properties', () => {
+      const incompleteEstabelecimento = {
+        id: 3,
+        nomeFantasia: 'Incomplete Store'
+      } as Estabelecimento;
+
+      component.estabelecimentos = [incompleteEstabelecimento];
+      component.isLoading = false;
+      component.error = null;
+      fixture.detectChanges();
+
+      const cardElement = fixture.debugElement.query(By.css('app-estabelecimento-card'));
+      expect(cardElement).toBeTruthy();
+      expect(cardElement.componentInstance.estabelecimento).toEqual(incompleteEstabelecimento);
+    });
+
+    it('should handle very large estabelecimentos arrays', () => {
+      const largeArray = Array.from({ length: 100 }, (_, i) => ({
+        ...mockEstabelecimentos[0],
+        id: i + 1,
+        nomeFantasia: `Store ${i + 1}`
+      }));
+
+      component.estabelecimentos = largeArray;
+      component.isLoading = false;
+      component.error = null;
+      fixture.detectChanges();
+
+      const cardElements = fixture.debugElement.queryAll(By.css('app-estabelecimento-card'));
+      expect(cardElements.length).toBe(100);
     });
   });
 });

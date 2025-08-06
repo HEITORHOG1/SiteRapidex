@@ -395,7 +395,9 @@ describe('AuthTokenInterceptor', () => {
       
       methods.forEach(method => {
         let req: HttpRequest<any>;
-        if (method === 'GET' || method === 'DELETE') {
+        if (method === 'GET') {
+          req = new HttpRequest(method, '/api/data');
+        } else if (method === 'DELETE') {
           req = new HttpRequest(method, '/api/data');
         } else {
           req = new HttpRequest(method, '/api/data', {});

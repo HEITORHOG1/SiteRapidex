@@ -1,6 +1,6 @@
 import { TestBed } from '@angular/core/testing';
 import { HttpErrorResponse } from '@angular/common/http';
-import { of, throwError, timer } from 'rxjs';
+import { of, throwError, timer, combineLatest } from 'rxjs';
 import { EstabelecimentoService } from './estabelecimento.service';
 import { EstabelecimentoApi } from '../../data-access/api/estabelecimento.api';
 import { Estabelecimento } from '../../data-access/models/estabelecimento.models';
@@ -456,6 +456,181 @@ describe('EstabelecimentoService', () => {
             }
           }
         });
+      });
+    });
+  });
+
+  describe('Enhanced Error Scenarios', () => {
+    it('should handle timeout errors correctly', (done) => {
+      const timeoutError = new HttpErrorResponse({
+        status: 408,
+        statusText: 'Request Timeout'
+      });
+
+      mockApi.getEstabelecimentosByProprietario.and.returnValue(throwError(() => timeoutError));
+
+      service.loadEstabelecimentosForProprietario('user123', 0).subscribe({
+        error: (error: ApiError) => {
+          expect(error.code).toBe(ErrorCodes.SERVER_ERROR);
+          expect(error.message).toBe('Erro ao carregar estabelecimentos');
+          expect(service.getErrorState().hasError).toBeTrue();
+          done();
+        }
+      });
+    });
+
+    it('should handle CORS errors correctly', (done) => {
+      const corsError = new HttpErrorResponse({
+        status: 0,
+        statusText: 'Unknown Error',
+        error: new ProgressEvent('error')
+      });
+
+      mockApi.getEstabelecimentosByProprietario.and.returnValue(throwError(() => corsError));
+
+      service.loadEstabelecimentosForProprietario('user123', 0).subscribe({
+        error: (error: ApiError) => {
+          expect(error.code).toBe(ErrorCodes.NETWORK_ERROR);
+          expect(error.message).toBe('Erro de conexão. Verifique sua internet.');
+          done();
+        }
+      });
+    });
+
+    it('should handle validation errors with custom message', (done) => {
+      const validationError = new HttpErrorResponse({
+        status: 422,
+        statusText: 'Unprocessable Entity',
+        error: { message: 'ID do proprietário é obrigatório' }
+      });
+
+      mockApi.getEstabelecimentosByProprietario.and.returnValue(throwError(() => validationError));
+
+      service.loadEstabelecimentosForProprietario('user123', 0).subscribe({
+        error: (error: ApiError) => {
+          expect(error.code).toBe(ErrorCodes.VALIDATION_ERROR);
+          expect(error.message).toBe('ID do proprietário é obrigatório');
+          done();
+        }
+      });
+    });
+  });
+
+  describe('Enhanced Loading States', () => {
+    it('should emit loading message during estabelecimentos load', (done) => {
+      mockApi.getEstabelecimentosByProprietario.and.returnValue(timer(50).pipe(() => of(mockEstabelecimentos)));
+
+      let loadingMessages: string[] = [];
+      service.loadingState$.subscribe(state => {
+        if (state.message) {
+          loadingMessages.push(state.message);
+        }
+        if (!state.isLoading && loadingMessages.length > 0) {
+          expect(loadingMessages).toContain('Carregando estabelecimentos...');
+          done();
+        }
+      });
+
+      service.loadEstabelecimentosForProprietario('user123').subscribe();
+    });
+
+    it('should clear loading message after completion', (done) => {
+      mockApi.getEstabelecimentosByProprietario.and.returnValue(of(mockEstabelecimentos));
+
+      service.loadEstabelecimentosForProprietario('user123').subscribe({
+        next: () => {
+          const loadingState = service.getLoadingState();
+          expect(loadingState.isLoading).toBeFalse();
+          expect(loadingState.message).toBeUndefined();
+          done();
+        }
+      });
+    });
+
+    it('should handle concurrent loading operations correctly', (done) => {
+      mockApi.getEstabelecimentosByProprietario.and.returnValue(timer(100).pipe(() => of(mockEstabelecimentos)));
+      mockApi.getEstabelecimentoById.and.returnValue(timer(50).pipe(() => of(mockEstabelecimento)));
+
+      let completedOperations = 0;
+
+      // Start both operations
+      service.loadEstabelecimentosForProprietario('user123').subscribe({
+        next: () => {
+          completedOperations++;
+          if (completedOperations === 2) {
+            expect(service.isLoadingEstabelecimentos()).toBeFalse();
+            expect(service.isLoadingEstabelecimentoById()).toBeFalse();
+            done();
+          }
+        }
+      });
+
+      service.getEstabelecimentoById('1').subscribe({
+        next: () => {
+          completedOperations++;
+          if (completedOperations === 2) {
+            expect(service.isLoadingEstabelecimentos()).toBeFalse();
+            expect(service.isLoadingEstabelecimentoById()).toBeFalse();
+            done();
+          }
+        }
+      });
+    });
+  });
+
+  describe('Enhanced State Management', () => {
+    it('should maintain state consistency during rapid operations', (done) => {
+      mockApi.getEstabelecimentosByProprietario.and.returnValue(of(mockEstabelecimentos));
+
+      // Perform rapid operations
+      service.selectEstabelecimento(mockEstabelecimentos[0]);
+      service.loadEstabelecimentosForProprietario('user123').subscribe({
+        next: () => {
+          // Should maintain selection
+          expect(service.getSelectedEstabelecimento()).toEqual(mockEstabelecimentos[0]);
+          
+          // Clear and verify
+          service.clearEstabelecimentos();
+          expect(service.getSelectedEstabelecimento()).toBeNull();
+          expect(service.getEstabelecimentos()).toEqual([]);
+          done();
+        }
+      });
+    });
+
+    it('should handle state transitions correctly', (done) => {
+      let stateTransitions: any[] = [];
+      
+      // Monitor all state changes
+      combineLatest([
+        service.estabelecimentos$,
+        service.selectedEstabelecimento$,
+        service.loadingState$,
+        service.errorState$
+      ]).subscribe(([estabelecimentos, selected, loading, error]: [Estabelecimento[], Estabelecimento | null, any, any]) => {
+        stateTransitions.push({
+          estabelecimentos: estabelecimentos.length,
+          hasSelected: !!selected,
+          isLoading: loading.isLoading,
+          hasError: error.hasError
+        });
+      });
+
+      mockApi.getEstabelecimentosByProprietario.and.returnValue(of(mockEstabelecimentos));
+
+      service.loadEstabelecimentosForProprietario('user123').subscribe({
+        next: () => {
+          // Verify state transitions occurred
+          expect(stateTransitions.length).toBeGreaterThan(1);
+          
+          // Final state should be correct
+          const finalState = stateTransitions[stateTransitions.length - 1];
+          expect(finalState.estabelecimentos).toBe(2);
+          expect(finalState.hasSelected).toBe(true);
+          expect(finalState.isLoading).toBe(false);
+          expect(finalState.hasError).toBe(false);
+          done();
+        }
       });
     });
   });
