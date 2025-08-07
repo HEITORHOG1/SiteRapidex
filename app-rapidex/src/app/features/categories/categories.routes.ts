@@ -1,14 +1,15 @@
 import { Routes } from '@angular/router';
 import { authGuard } from '../../core/guards/auth.guard';
+import { establishmentContextGuard, categoryOwnershipGuard } from './guards';
 
 /**
  * Category feature routes configuration
- * All routes require authentication and establishment context
+ * All routes require authentication, establishment context, and proper ownership validation
  */
 export const CATEGORY_ROUTES: Routes = [
   {
     path: '',
-    canActivate: [authGuard],
+    canActivate: [authGuard, establishmentContextGuard],
     children: [
       {
         path: '',
@@ -31,6 +32,7 @@ export const CATEGORY_ROUTES: Routes = [
       },
       {
         path: 'edit/:id',
+        canActivate: [categoryOwnershipGuard],
         loadComponent: () => 
           import('./pages/category-edit-page/category-edit-page.component')
             .then(c => c.CategoryEditPageComponent),
@@ -38,6 +40,7 @@ export const CATEGORY_ROUTES: Routes = [
       },
       {
         path: 'detail/:id',
+        canActivate: [categoryOwnershipGuard],
         loadComponent: () => 
           import('./pages/category-detail-page/category-detail-page.component')
             .then(c => c.CategoryDetailPageComponent),

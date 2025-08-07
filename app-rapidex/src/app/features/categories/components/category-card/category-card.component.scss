@@ -1,0 +1,520 @@
+@import '../../../../../styles/tokens';
+@import '../../../../../styles/mixins';
+
+.category-card {
+  position: relative;
+  background: $white;
+  border: 1px solid $gray-200;
+  border-radius: $border-radius-lg;
+  padding: $spacing-lg;
+  cursor: pointer;
+  transition: all $transition-normal;
+  box-shadow: $shadow-sm;
+  overflow: hidden;
+  min-height: 200px;
+
+  // Hover effects
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: $shadow-lg;
+    border-color: $primary-color;
+
+    .category-card__action-btn {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .category-card__action-btn--view {
+      background-color: $info-color;
+      color: $white;
+    }
+
+    .category-card__action-btn--edit {
+      background-color: $warning-color;
+      color: $white;
+    }
+
+    .category-card__action-btn--delete {
+      background-color: $error-color;
+      color: $white;
+    }
+  }
+
+  // Focus styles for accessibility
+  &:focus {
+    outline: 2px solid $primary-color;
+    outline-offset: 2px;
+    box-shadow: $shadow-lg, 0 0 0 4px rgba($primary-color, 0.1);
+  }
+
+  // Focus visible for keyboard navigation
+  &:focus-visible {
+    outline: 3px solid $primary-color;
+    outline-offset: 2px;
+  }
+
+  // Focused state
+  &--focused {
+    box-shadow: $shadow-lg, 0 0 0 2px rgba($primary-color, 0.2);
+    border-color: $primary-color;
+  }
+
+  // Inactive state
+  &--inactive {
+    opacity: 0.7;
+    border-color: $gray-300;
+    background: linear-gradient(135deg, rgba($gray-100, 0.5) 0%, $white 100%);
+
+    .category-card__title {
+      color: $gray-600;
+    }
+
+    &:hover {
+      opacity: 0.9;
+    }
+  }
+
+  // Loading state
+  &--loading {
+    cursor: default;
+    pointer-events: none;
+
+    &:hover {
+      transform: none;
+      box-shadow: $shadow-sm;
+      border-color: $gray-200;
+    }
+  }
+
+  // Responsive design
+  @include mobile-only {
+    padding: $spacing-md;
+    min-height: 180px;
+  }
+
+  @include tablet-up {
+    min-height: 220px;
+  }
+
+  @include desktop-up {
+    min-height: 240px;
+  }
+}
+
+// Card Content
+.category-card__content {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  gap: $spacing-md;
+}
+
+// Header
+.category-card__header {
+  @include flex-between;
+  align-items: flex-start;
+  gap: $spacing-sm;
+  margin-bottom: $spacing-sm;
+}
+
+.category-card__title {
+  font-size: $font-size-lg;
+  font-weight: $font-weight-semibold;
+  color: $gray-900;
+  margin: 0;
+  line-height: $line-height-tight;
+  flex: 1;
+  word-break: break-word;
+  
+  @include mobile-only {
+    font-size: $font-size-base;
+  }
+}
+
+.category-card__status {
+  padding: $spacing-xs $spacing-sm;
+  border-radius: $border-radius-full;
+  font-size: $font-size-xs;
+  font-weight: $font-weight-medium;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  flex-shrink: 0;
+
+  &.status--active {
+    background-color: rgba($success-color, 0.1);
+    color: $success-color;
+    border: 1px solid rgba($success-color, 0.2);
+  }
+
+  &.status--inactive {
+    background-color: rgba($error-color, 0.1);
+    color: $error-color;
+    border: 1px solid rgba($error-color, 0.2);
+  }
+}
+
+// Description
+.category-card__description {
+  flex: 1;
+  
+  p {
+    font-size: $font-size-sm;
+    color: $gray-600;
+    margin: 0;
+    line-height: $line-height-normal;
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    word-break: break-word;
+  }
+}
+
+// Category Info
+.category-card__info {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-xs;
+}
+
+.category-card__product-count {
+  font-size: $font-size-sm;
+  color: $gray-700;
+  font-weight: $font-weight-medium;
+  display: flex;
+  align-items: center;
+  gap: $spacing-xs;
+}
+
+.category-card__dates {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-xs;
+  
+  @include tablet-up {
+    flex-direction: row;
+    justify-content: space-between;
+  }
+}
+
+.category-card__created-date,
+.category-card__updated-date {
+  font-size: $font-size-xs;
+  color: $gray-500;
+  display: flex;
+  align-items: center;
+  gap: $spacing-xs;
+}
+
+.category-card__updated-date {
+  font-style: italic;
+}
+
+// Footer
+.category-card__footer {
+  @include flex-between;
+  align-items: flex-end;
+  gap: $spacing-sm;
+  margin-top: auto;
+  padding-top: $spacing-sm;
+  border-top: 1px solid $gray-100;
+
+  @include mobile-only {
+    flex-direction: column;
+    align-items: stretch;
+    gap: $spacing-sm;
+  }
+}
+
+.category-card__meta {
+  flex: 1;
+}
+
+.category-card__id {
+  font-size: $font-size-xs;
+  color: $gray-400;
+  font-family: $font-family-mono;
+  font-weight: $font-weight-medium;
+}
+
+// Actions
+.category-card__actions {
+  display: flex;
+  gap: $spacing-xs;
+  align-items: center;
+
+  @include mobile-only {
+    justify-content: center;
+  }
+}
+
+.category-card__action-btn {
+  @include button-reset;
+  width: 32px;
+  height: 32px;
+  background-color: $gray-100;
+  color: $gray-600;
+  border: 1px solid $gray-200;
+  border-radius: $border-radius-md;
+  font-size: $font-size-sm;
+  transition: all $transition-fast;
+  @include flex-center;
+  opacity: 0.7;
+  transform: translateY(2px);
+
+  &:hover {
+    opacity: 1;
+    transform: translateY(0);
+    box-shadow: $shadow-md;
+  }
+
+  &:focus {
+    outline: 2px solid $primary-color;
+    outline-offset: 1px;
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  &--view {
+    &:hover {
+      background-color: $info-color;
+      color: $white;
+      border-color: $info-color;
+    }
+  }
+
+  &--edit {
+    &:hover {
+      background-color: $warning-color;
+      color: $white;
+      border-color: $warning-color;
+    }
+  }
+
+  &--delete {
+    &:hover {
+      background-color: $error-color;
+      color: $white;
+      border-color: $error-color;
+    }
+  }
+
+  @include mobile-only {
+    width: 36px;
+    height: 36px;
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+// Focus Indicator
+.category-card__focus-indicator {
+  position: absolute;
+  top: -3px;
+  left: -3px;
+  right: -3px;
+  bottom: -3px;
+  border: 3px solid $primary-color;
+  border-radius: calc(#{$border-radius-lg} + 3px);
+  pointer-events: none;
+  animation: focusPulse 2s infinite;
+}
+
+@keyframes focusPulse {
+  0%, 100% { opacity: 0.6; }
+  50% { opacity: 1; }
+}
+
+// Inactive Overlay
+.category-card__inactive-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba($white, 0.8);
+  @include flex-center;
+  backdrop-filter: blur(1px);
+  pointer-events: none;
+}
+
+.category-card__inactive-label {
+  background: $error-color;
+  color: $white;
+  padding: $spacing-xs $spacing-sm;
+  border-radius: $border-radius-full;
+  font-size: $font-size-xs;
+  font-weight: $font-weight-bold;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  box-shadow: $shadow-md;
+}
+
+// Screen reader only text
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+// Loading Skeleton
+.category-card__skeleton {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-md;
+  height: 100%;
+}
+
+.skeleton {
+  background: linear-gradient(90deg, $gray-200 25%, $gray-100 50%, $gray-200 75%);
+  background-size: 200% 100%;
+  animation: shimmer 2s infinite;
+  border-radius: $border-radius-sm;
+
+  &--header {
+    height: 24px;
+    width: 70%;
+  }
+
+  &--line {
+    height: 16px;
+    width: 100%;
+
+    &--short {
+      width: 60%;
+    }
+  }
+
+  &--footer {
+    margin-top: auto;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: $spacing-sm;
+  }
+
+  &--badge {
+    height: 20px;
+    width: 60px;
+    border-radius: $border-radius-full;
+  }
+
+  &--actions {
+    display: flex;
+    gap: $spacing-xs;
+  }
+
+  &--button {
+    height: 32px;
+    width: 32px;
+    border-radius: $border-radius-md;
+  }
+}
+
+// Animation for skeleton loading
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+// Enhanced animations
+.category-card {
+  animation: fadeIn $transition-normal;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+// Responsive grid support
+@include tablet-up {
+  .category-card {
+    &:nth-child(odd) {
+      animation-delay: 0.1s;
+    }
+    
+    &:nth-child(even) {
+      animation-delay: 0.2s;
+    }
+  }
+}
+
+// High contrast mode support
+@media (prefers-contrast: high) {
+  .category-card {
+    border-width: 2px;
+    
+    &--focused {
+      border-width: 3px;
+    }
+  }
+
+  .category-card__action-btn {
+    border-width: 2px;
+  }
+}
+
+// Reduced motion support
+@media (prefers-reduced-motion: reduce) {
+  .category-card {
+    transition: none;
+    animation: none;
+    
+    &:hover {
+      transform: none;
+    }
+  }
+  
+  .skeleton {
+    animation: none;
+  }
+  
+  .category-card__focus-indicator {
+    animation: none;
+  }
+
+  .category-card__action-btn {
+    transition: none;
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+// Print styles
+@media print {
+  .category-card {
+    box-shadow: none;
+    border: 1px solid $gray-400;
+    break-inside: avoid;
+    
+    &:hover {
+      transform: none;
+      box-shadow: none;
+    }
+  }
+
+  .category-card__actions {
+    display: none;
+  }
+
+  .category-card__focus-indicator {
+    display: none;
+  }
+}

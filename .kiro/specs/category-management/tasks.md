@@ -31,7 +31,7 @@
   - Add offline support with cached data
   - _Requirements: 9.1, 9.2, 9.4, 10.1, 10.2_
 
-- [ ] 5. Create Category security guards and interceptors
+- [x] 5. Create Category security guards and interceptors
   - Implement CategoryOwnershipGuard for route protection
   - Create EstablishmentContextGuard for category routes
   - Add CategorySecurityInterceptor for API request validation
@@ -39,7 +39,7 @@
   - Add proper error handling for security violations
   - _Requirements: 6.1, 6.2, 6.3, 6.4, 6.6_
 
-- [ ] 6. Develop CategoryCardComponent for list display
+- [x] 6. Develop CategoryCardComponent for list display
   - Create reusable category card with OnPush strategy
   - Add category information display (name, description, product count)
   - Implement action buttons (edit, delete, view details)

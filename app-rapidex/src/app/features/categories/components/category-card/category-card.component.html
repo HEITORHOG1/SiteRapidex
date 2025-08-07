@@ -1,0 +1,135 @@
+<div 
+  class="category-card"
+  [class.category-card--loading]="isLoading"
+  [class.category-card--focused]="isFocused()"
+  [class.category-card--inactive]="!category.ativo"
+  (click)="onCardClick()"
+  (focus)="onCardFocus()"
+  (blur)="onCardBlur()"
+  [attr.aria-label]="getAriaLabel()"
+  [attr.aria-describedby]="getAriaDescribedBy()"
+  role="button"
+  [tabindex]="tabIndex"
+  (keydown)="onKeydown($event)">
+
+  <!-- Loading Skeleton -->
+  <div *ngIf="isLoading" class="category-card__skeleton">
+    <div class="skeleton skeleton--header"></div>
+    <div class="skeleton skeleton--line"></div>
+    <div class="skeleton skeleton--line skeleton--short"></div>
+    <div class="skeleton skeleton--footer">
+      <div class="skeleton skeleton--badge"></div>
+      <div class="skeleton skeleton--actions">
+        <div class="skeleton skeleton--button"></div>
+        <div class="skeleton skeleton--button"></div>
+        <div class="skeleton skeleton--button"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Card Content -->
+  <div *ngIf="!isLoading" class="category-card__content">
+    <!-- Header -->
+    <div class="category-card__header">
+      <h3 class="category-card__title" [id]="'title-' + category.id">
+        {{ category.nome }}
+      </h3>
+      <span 
+        class="category-card__status"
+        [class]="getStatusClass()"
+        [attr.aria-label]="'Status: ' + getStatusText()"
+        [id]="'status-' + category.id">
+        {{ getStatusText() }}
+      </span>
+    </div>
+
+    <!-- Description -->
+    <div class="category-card__description" *ngIf="category.descricao" [id]="'desc-' + category.id">
+      <p>{{ category.descricao }}</p>
+    </div>
+
+    <!-- Category Info -->
+    <div class="category-card__info" [id]="'info-' + category.id">
+      <div class="category-card__product-count" *ngIf="category.produtosCount !== undefined">
+        <span class="sr-only">Quantidade de produtos:</span>
+        <span aria-hidden="true">📦</span> {{ getProdutoCountText() }}
+      </div>
+      <div class="category-card__dates">
+        <span class="category-card__created-date">
+          <span class="sr-only">Criada em:</span>
+          <span aria-hidden="true">📅</span> {{ formatDate(category.dataCriacao) }}
+        </span>
+        <span class="category-card__updated-date" *ngIf="category.dataAtualizacao && category.dataAtualizacao !== category.dataCriacao">
+          <span class="sr-only">Atualizada em:</span>
+          <span aria-hidden="true">✏️</span> {{ formatDate(category.dataAtualizacao) }}
+        </span>
+      </div>
+    </div>
+
+    <!-- Footer Actions -->
+    <div class="category-card__footer">
+      <div class="category-card__meta" [id]="'meta-' + category.id">
+        <span class="category-card__id">
+          <span class="sr-only">ID da categoria:</span>
+          #{{ category.id }}
+        </span>
+      </div>
+      
+      <div class="category-card__actions" *ngIf="showActions">
+        <button 
+          class="category-card__action-btn category-card__action-btn--view"
+          (click)="onViewDetails($event)"
+          [attr.aria-label]="'Ver detalhes da categoria ' + category.nome"
+          type="button"
+          tabindex="-1">
+          <span aria-hidden="true">👁️</span>
+          <span class="sr-only">Ver detalhes</span>
+        </button>
+        
+        <button 
+          class="category-card__action-btn category-card__action-btn--edit"
+          (click)="onEdit($event)"
+          [attr.aria-label]="'Editar categoria ' + category.nome"
+          type="button"
+          tabindex="-1">
+          <span aria-hidden="true">✏️</span>
+          <span class="sr-only">Editar</span>
+        </button>
+        
+        <button 
+          class="category-card__action-btn category-card__action-btn--delete"
+          (click)="onDelete($event)"
+          [attr.aria-label]="'Excluir categoria ' + category.nome"
+          [attr.aria-describedby]="category.produtosCount && category.produtosCount > 0 ? 'delete-warning-' + category.id : null"
+          type="button"
+          tabindex="-1">
+          <span aria-hidden="true">🗑️</span>
+          <span class="sr-only">Excluir</span>
+        </button>
+        
+        <!-- Delete warning for categories with products -->
+        <div 
+          *ngIf="category.produtosCount && category.produtosCount > 0"
+          [id]="'delete-warning-' + category.id"
+          class="sr-only">
+          Atenção: Esta categoria possui {{ category.produtosCount }} produto(s) associado(s)
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Focus Indicator -->
+  <div 
+    *ngIf="isFocused() && !isLoading" 
+    class="category-card__focus-indicator"
+    aria-hidden="true">
+  </div>
+
+  <!-- Inactive Overlay -->
+  <div 
+    *ngIf="!category?.ativo && !isLoading" 
+    class="category-card__inactive-overlay"
+    aria-hidden="true">
+    <span class="category-card__inactive-label">Inativa</span>
+  </div>
+</div>
