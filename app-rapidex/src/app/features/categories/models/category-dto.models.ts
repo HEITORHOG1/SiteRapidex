@@ -50,4 +50,99 @@ export interface CategoryDeletionValidationResponse {
   canDelete: boolean;
   reason?: string;
   affectedProductsCount?: number;
+  affectedProducts?: ProductSummary[];
+  hasActiveProducts?: boolean;
+  hasInactiveProducts?: boolean;
+  suggestSoftDelete?: boolean;
+  alternativeCategories?: Category[];
+}
+
+/**
+ * Request DTO for category deletion
+ */
+export interface CategoryDeletionRequest {
+  categoryId: number;
+  deletionType: 'hard' | 'soft';
+  moveProductsToCategory?: number;
+  reason?: string;
+}
+
+/**
+ * Response DTO for category deletion
+ */
+export interface CategoryDeletionResponse {
+  success: boolean;
+  deletionType: 'hard' | 'soft';
+  affectedProductsCount: number;
+  movedProductsCount?: number;
+  targetCategoryId?: number;
+  canUndo: boolean;
+  undoToken?: string;
+  undoExpiresAt?: Date;
+}
+
+/**
+ * Request DTO for bulk category deletion
+ */
+export interface BulkCategoryDeletionRequest {
+  categoryIds: number[];
+  deletionType: 'hard' | 'soft';
+  moveProductsToCategory?: number;
+  reason?: string;
+}
+
+/**
+ * Response DTO for bulk category deletion
+ */
+export interface BulkCategoryDeletionResponse {
+  totalRequested: number;
+  successfulDeletions: number;
+  failedDeletions: number;
+  deletionResults: CategoryDeletionResponse[];
+  errors: Array<{
+    categoryId: number;
+    categoryName: string;
+    error: string;
+  }>;
+}
+
+/**
+ * Request DTO for undoing category deletion
+ */
+export interface UndoCategoryDeletionRequest {
+  undoToken: string;
+}
+
+/**
+ * Response DTO for undoing category deletion
+ */
+export interface UndoCategoryDeletionResponse {
+  success: boolean;
+  restoredCategory: Category;
+  restoredProductsCount: number;
+}
+
+/**
+ * DTO for deletion audit trail entry
+ */
+export interface CategoryDeletionAuditEntry {
+  id: number;
+  categoryId: number;
+  categoryName: string;
+  estabelecimentoId: number;
+  deletionType: 'hard' | 'soft';
+  deletedBy: number;
+  deletedByName: string;
+  deletedAt: Date;
+  reason?: string;
+  affectedProductsCount: number;
+  movedProductsCount?: number;
+  targetCategoryId?: number;
+  targetCategoryName?: string;
+  canUndo: boolean;
+  undoToken?: string;
+  undoExpiresAt?: Date;
+  undoneAt?: Date;
+  undoneBy?: number;
+  undoneByName?: string;
 }

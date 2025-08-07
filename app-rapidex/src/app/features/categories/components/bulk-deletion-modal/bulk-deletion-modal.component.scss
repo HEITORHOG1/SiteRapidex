@@ -1,0 +1,401 @@
+// Import base modal styles
+@import '../category-deletion-modal/category-deletion-modal.component.scss';
+
+// Bulk-specific overrides and additions
+.modal-content--large {
+  max-width: 800px;
+}
+
+// Summary Cards
+.summary-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 1rem;
+  margin-bottom: 2rem;
+}
+
+.summary-card {
+  text-align: center;
+  padding: 1.5rem 1rem;
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  transition: all 0.2s ease;
+
+  &--warning {
+    background: #fffbeb;
+    border-color: #fed7aa;
+  }
+
+  &.risk-level--low {
+    background: #f0fdf4;
+    border-color: #bbf7d0;
+  }
+
+  &.risk-level--medium {
+    background: #fffbeb;
+    border-color: #fed7aa;
+  }
+
+  &.risk-level--high {
+    background: #fef2f2;
+    border-color: #fecaca;
+  }
+}
+
+.summary-card__value {
+  display: block;
+  font-size: 2rem;
+  font-weight: 700;
+  color: #374151;
+  margin-bottom: 0.5rem;
+
+  .summary-card--warning & {
+    color: #f59e0b;
+  }
+
+  .summary-card.risk-level--low & {
+    color: #10b981;
+  }
+
+  .summary-card.risk-level--medium & {
+    color: #f59e0b;
+  }
+
+  .summary-card.risk-level--high & {
+    color: #dc2626;
+  }
+}
+
+.summary-card__label {
+  display: block;
+  font-size: 0.875rem;
+  color: #6b7280;
+  font-weight: 500;
+}
+
+// Risk Breakdown
+.risk-breakdown {
+  h3 {
+    margin: 0 0 1.5rem 0;
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: #374151;
+  }
+}
+
+.risk-groups {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.risk-group {
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 1.5rem;
+  background: #fafafa;
+
+  &--low {
+    background: #f0fdf4;
+    border-color: #bbf7d0;
+  }
+
+  &--medium {
+    background: #fffbeb;
+    border-color: #fed7aa;
+  }
+
+  &--blocked {
+    background: #fef2f2;
+    border-color: #fecaca;
+  }
+
+  h4 {
+    margin: 0 0 0.5rem 0;
+    font-size: 1rem;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+}
+
+.risk-icon {
+  font-size: 1.25rem;
+}
+
+.risk-description {
+  margin: 0 0 1rem 0;
+  color: #6b7280;
+  font-size: 0.875rem;
+}
+
+// Category Chips
+.category-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.category-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.5rem 0.75rem;
+  background: #f3f4f6;
+  border: 1px solid #d1d5db;
+  border-radius: 9999px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #374151;
+
+  &--safe {
+    background: #d1fae5;
+    border-color: #a7f3d0;
+    color: #065f46;
+  }
+
+  &--blocked {
+    background: #fee2e2;
+    border-color: #fecaca;
+    color: #991b1b;
+  }
+
+  &--with-products {
+    background: #fef3c7;
+    border-color: #fde68a;
+    color: #92400e;
+  }
+
+  small {
+    font-size: 0.75rem;
+    opacity: 0.8;
+  }
+}
+
+// Category Details
+.category-details {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.category-detail {
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  padding: 1rem;
+}
+
+.category-detail__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.5rem;
+}
+
+.category-name {
+  font-weight: 600;
+  color: #374151;
+}
+
+.product-count {
+  font-size: 0.875rem;
+  color: #6b7280;
+}
+
+.active-count {
+  color: #f59e0b;
+  font-weight: 500;
+}
+
+.category-risks {
+  ul {
+    margin: 0;
+    padding-left: 1.5rem;
+    font-size: 0.875rem;
+    color: #dc2626;
+
+    li {
+      margin-bottom: 0.25rem;
+    }
+  }
+}
+
+// Bulk Deletion Options
+.bulk-deletion-options {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+
+  h3 {
+    margin: 0 0 1rem 0;
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: #374151;
+  }
+}
+
+// Bulk Confirmation
+.bulk-confirmation-step {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.summary-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 1rem;
+}
+
+.categories-list {
+  h4 {
+    margin: 0 0 1rem 0;
+    font-size: 1rem;
+    font-weight: 600;
+    color: #374151;
+  }
+}
+
+// Responsive Design for Bulk Modal
+@media (max-width: 768px) {
+  .modal-content--large {
+    max-width: 95vw;
+    margin: 0.5rem;
+  }
+
+  .summary-cards {
+    grid-template-columns: 1fr;
+    gap: 0.75rem;
+  }
+
+  .summary-card {
+    padding: 1rem;
+  }
+
+  .summary-card__value {
+    font-size: 1.5rem;
+  }
+
+  .risk-groups {
+    gap: 1rem;
+  }
+
+  .risk-group {
+    padding: 1rem;
+  }
+
+  .category-detail__header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+
+  .summary-grid {
+    grid-template-columns: 1fr;
+    gap: 0.75rem;
+  }
+
+  .category-chips {
+    gap: 0.375rem;
+  }
+
+  .category-chip {
+    font-size: 0.8125rem;
+    padding: 0.375rem 0.625rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .modal-content--large {
+    max-height: 95vh;
+  }
+
+  .modal-header,
+  .modal-body,
+  .modal-footer {
+    padding: 0.75rem;
+  }
+
+  .summary-card__value {
+    font-size: 1.25rem;
+  }
+
+  .risk-group {
+    padding: 0.75rem;
+  }
+
+  .category-detail {
+    padding: 0.75rem;
+  }
+}
+
+// Animation for bulk operations
+.bulk-impact-analysis {
+  animation: slideInUp 0.4s ease;
+}
+
+@keyframes slideInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+// Enhanced loading state for bulk operations
+.loading-state {
+  p {
+    font-size: 1rem;
+    color: #6b7280;
+  }
+}
+
+// Bulk-specific button styles
+.btn {
+  &:has(span:contains("Categoria(s)")) {
+    min-width: 200px;
+    justify-content: center;
+  }
+}
+
+// High contrast mode adjustments
+@media (prefers-contrast: high) {
+  .summary-card,
+  .risk-group,
+  .category-detail,
+  .category-chip {
+    border-width: 2px;
+  }
+
+  .category-chip--safe {
+    background: #bbf7d0;
+    border-color: #059669;
+  }
+
+  .category-chip--blocked {
+    background: #fecaca;
+    border-color: #dc2626;
+  }
+
+  .category-chip--with-products {
+    background: #fde68a;
+    border-color: #f59e0b;
+  }
+}
+
+// Focus management for bulk operations
+.risk-group:focus-within {
+  outline: 2px solid #3b82f6;
+  outline-offset: 2px;
+}
+
+.category-detail:focus-within {
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}

@@ -1,0 +1,1 @@
+export * from './bulk-deletion-modal.component';

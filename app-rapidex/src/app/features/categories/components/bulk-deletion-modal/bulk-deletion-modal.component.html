@@ -1,0 +1,438 @@
+<div 
+  class="modal-overlay" 
+  [class.modal-overlay--visible]="isVisible"
+  (click)="onClose()"
+  [attr.aria-hidden]="!isVisible"
+  role="dialog"
+  [attr.aria-label]="getModalAriaLabel()"
+  (keydown)="onKeyDown($event)">
+  
+  <div 
+    class="modal-content modal-content--large" 
+    (click)="$event.stopPropagation()"
+    [attr.aria-labelledby]="'modal-title'"
+    [attr.aria-describedby]="'modal-description'">
+    
+    <!-- Modal Header -->
+    <header class="modal-header">
+      <div class="modal-header__content">
+        <h2 id="modal-title" class="modal-title">
+          <span class="modal-title__icon" aria-hidden="true">🗑️</span>
+          {{ getStepTitle() }}
+        </h2>
+        <p id="modal-description" class="modal-description">
+          {{ getStepDescription() }}
+        </p>
+      </div>
+      
+      <button 
+        type="button" 
+        class="modal-close"
+        (click)="onClose()"
+        aria-label="Fechar modal"
+        title="Fechar modal">
+        <span aria-hidden="true">×</span>
+      </button>
+    </header>
+
+    <!-- Progress Indicator -->
+    <div class="progress-indicator" [attr.aria-label]="getStepAriaLabel()">
+      <div class="progress-steps">
+        <div 
+          class="progress-step"
+          [class.progress-step--active]="currentStep() === 'analysis'"
+          [class.progress-step--completed]="currentStep() !== 'analysis'">
+          <span class="progress-step__number">1</span>
+          <span class="progress-step__label">Análise</span>
+        </div>
+        
+        <div 
+          class="progress-step"
+          [class.progress-step--active]="currentStep() === 'options'"
+          [class.progress-step--completed]="currentStep() === 'confirmation'">
+          <span class="progress-step__number">2</span>
+          <span class="progress-step__label">Opções</span>
+        </div>
+        
+        <div 
+          class="progress-step"
+          [class.progress-step--active]="currentStep() === 'confirmation'">
+          <span class="progress-step__number">3</span>
+          <span class="progress-step__label">Confirmação</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal Body -->
+    <div class="modal-body">
+      
+      <!-- Loading State -->
+      <div *ngIf="loading()" class="loading-state">
+        <div class="loading-spinner" aria-hidden="true"></div>
+        <p>Analisando impacto da exclusão em lote...</p>
+      </div>
+
+      <!-- Error State -->
+      <div *ngIf="error()" class="error-state" role="alert">
+        <div class="error-icon" aria-hidden="true">❌</div>
+        <h3>Erro na Análise</h3>
+        <p>{{ error() }}</p>
+        <button type="button" class="btn btn--secondary" (click)="loadImpactAnalyses()">
+          Tentar Novamente
+        </button>
+      </div>
+
+      <!-- Analysis Step -->
+      <div *ngIf="currentStep() === 'analysis' && impactAnalyses().length > 0 && !loading() && !error()" class="step-content">
+        <div class="bulk-impact-analysis">
+          
+          <!-- Summary Cards -->
+          <div class="summary-cards">
+            <div class="summary-card">
+              <div class="summary-card__value">{{ totalCategories() }}</div>
+              <div class="summary-card__label">Categorias Selecionadas</div>
+            </div>
+            
+            <div class="summary-card summary-card--warning">
+              <div class="summary-card__value">{{ totalAffectedProducts() }}</div>
+              <div class="summary-card__label">Produtos Afetados</div>
+            </div>
+            
+            <div class="summary-card" [class]="getRiskLevelClass()">
+              <div class="summary-card__value">{{ getRiskLevelText() }}</div>
+              <div class="summary-card__label">Nível de Risco</div>
+            </div>
+          </div>
+
+          <!-- Categories by Risk Level -->
+          <div class="risk-breakdown">
+            <h3>Análise por Categoria:</h3>
+            
+            <div class="risk-groups">
+              
+              <!-- Low Risk Categories -->
+              <div *ngIf="categoriesWithoutProducts().length > 0" class="risk-group risk-group--low">
+                <h4>
+                  <span class="risk-icon" aria-hidden="true">✅</span>
+                  Baixo Risco ({{ categoriesWithoutProducts().length }})
+                </h4>
+                <p class="risk-description">Categorias sem produtos associados</p>
+                <div class="category-chips">
+                  <span 
+                    *ngFor="let analysis of categoriesWithoutProducts()" 
+                    class="category-chip category-chip--safe">
+                    {{ analysis.category.nome }}
+                  </span>
+                </div>
+              </div>
+
+              <!-- Medium Risk Categories -->
+              <div *ngIf="categoriesWithProducts().length > 0" class="risk-group risk-group--medium">
+                <h4>
+                  <span class="risk-icon" aria-hidden="true">⚠️</span>
+                  Risco Médio/Alto ({{ categoriesWithProducts().length }})
+                </h4>
+                <p class="risk-description">Categorias com produtos associados</p>
+                <div class="category-details">
+                  <div 
+                    *ngFor="let analysis of categoriesWithProducts()" 
+                    class="category-detail">
+                    <div class="category-detail__header">
+                      <span class="category-name">{{ analysis.category.nome }}</span>
+                      <span class="product-count">
+                        {{ analysis.totalProductsCount }} produto(s)
+                        <span *ngIf="analysis.activeProductsCount > 0" class="active-count">
+                          ({{ analysis.activeProductsCount }} ativo(s))
+                        </span>
+                      </span>
+                    </div>
+                    <div *ngIf="analysis.risks.length > 0" class="category-risks">
+                      <ul>
+                        <li *ngFor="let risk of analysis.risks">{{ risk }}</li>
+                      </ul>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Blocked Categories -->
+              <div *ngIf="getBlockedCategories().length > 0" class="risk-group risk-group--blocked">
+                <h4>
+                  <span class="risk-icon" aria-hidden="true">🚫</span>
+                  Exclusão Permanente Bloqueada ({{ getBlockedCategories().length }})
+                </h4>
+                <p class="risk-description">Categorias que não podem ser excluídas permanentemente</p>
+                <div class="category-chips">
+                  <span 
+                    *ngFor="let analysis of getBlockedCategories()" 
+                    class="category-chip category-chip--blocked">
+                    {{ analysis.category.nome }}
+                  </span>
+                </div>
+              </div>
+
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- Options Step -->
+      <div *ngIf="currentStep() === 'options' && impactAnalyses().length > 0" class="step-content">
+        <form [formGroup]="bulkDeletionForm" class="bulk-deletion-options">
+          
+          <h3>Escolha o tipo de exclusão em lote:</h3>
+          
+          <!-- Deletion Type Options -->
+          <div class="deletion-types">
+            
+            <!-- Soft Delete Option -->
+            <label class="deletion-type-option">
+              <input 
+                type="radio" 
+                name="deletionType" 
+                value="soft"
+                formControlName="deletionType"
+                (change)="onDeletionTypeChange('soft')">
+              
+              <div class="deletion-type-content">
+                <div class="deletion-type-header">
+                  <span class="deletion-type-icon deletion-type-icon--soft" aria-hidden="true">🔒</span>
+                  <h4>{{ getDeletionTypeLabel('soft') }}</h4>
+                  <span class="deletion-type-badge deletion-type-badge--recommended">Recomendado</span>
+                </div>
+                <p class="deletion-type-description">
+                  {{ getDeletionTypeDescription('soft') }}
+                </p>
+                <ul class="deletion-type-benefits">
+                  <li>✅ Todos os produtos permanecem intactos</li>
+                  <li>✅ Pode ser revertido facilmente</li>
+                  <li>✅ Histórico preservado</li>
+                  <li>✅ Funciona para todas as categorias</li>
+                </ul>
+              </div>
+            </label>
+
+            <!-- Hard Delete Option -->
+            <label class="deletion-type-option" [class.deletion-type-option--disabled]="!canHardDelete()">
+              <input 
+                type="radio" 
+                name="deletionType" 
+                value="hard"
+                formControlName="deletionType"
+                [disabled]="!canHardDelete()"
+                (change)="onDeletionTypeChange('hard')">
+              
+              <div class="deletion-type-content">
+                <div class="deletion-type-header">
+                  <span class="deletion-type-icon deletion-type-icon--hard" aria-hidden="true">🗑️</span>
+                  <h4>{{ getDeletionTypeLabel('hard') }}</h4>
+                  <span class="deletion-type-badge deletion-type-badge--warning">Permanente</span>
+                </div>
+                <p class="deletion-type-description">
+                  {{ getDeletionTypeDescription('hard') }}
+                </p>
+                <ul class="deletion-type-risks" *ngIf="totalAffectedProducts() > 0">
+                  <li>⚠️ {{ totalAffectedProducts() }} produto(s) ficarão sem categoria</li>
+                  <li>⚠️ Ação irreversível após 5 minutos</li>
+                  <li>⚠️ Histórico será perdido</li>
+                </ul>
+                <div *ngIf="!canHardDelete()" class="deletion-type-blocked">
+                  <p>❌ Algumas categorias não podem ser excluídas permanentemente pois possuem produtos ativos.</p>
+                </div>
+              </div>
+            </label>
+          </div>
+
+          <!-- Product Migration Options -->
+          <div *ngIf="bulkDeletionForm.get('deletionType')?.value === 'hard' && totalAffectedProducts() > 0" class="product-migration">
+            <h4>Mover todos os produtos para outra categoria:</h4>
+            <select 
+              formControlName="moveProductsToCategory"
+              class="form-select"
+              aria-label="Selecionar categoria de destino">
+              <option value="">Selecione uma categoria...</option>
+              <option 
+                *ngFor="let altCategory of allAlternativeCategories()" 
+                [value]="altCategory.id">
+                {{ altCategory.nome }}
+              </option>
+            </select>
+            <p class="form-help">
+              Os {{ totalAffectedProducts() }} produto(s) de todas as categorias serão movidos para a categoria selecionada.
+            </p>
+          </div>
+
+          <!-- Reason Field -->
+          <div class="reason-field">
+            <label for="bulkReason">Motivo da exclusão em lote (opcional):</label>
+            <textarea 
+              id="bulkReason"
+              formControlName="reason"
+              class="form-textarea"
+              rows="3"
+              placeholder="Descreva o motivo da exclusão em lote para auditoria..."
+              maxlength="500"></textarea>
+          </div>
+
+        </form>
+      </div>
+
+      <!-- Confirmation Step -->
+      <div *ngIf="currentStep() === 'confirmation' && impactAnalyses().length > 0" class="step-content">
+        <div class="bulk-confirmation-step">
+          
+          <!-- Final Summary -->
+          <div class="final-summary">
+            <h3>Resumo da Exclusão em Lote:</h3>
+            
+            <div class="summary-grid">
+              <div class="summary-item">
+                <strong>Categorias:</strong> {{ totalCategories() }}
+              </div>
+              
+              <div class="summary-item">
+                <strong>Tipo de Exclusão:</strong> 
+                {{ getDeletionTypeLabel(bulkDeletionForm.get('deletionType')?.value) }}
+              </div>
+              
+              <div class="summary-item" *ngIf="totalAffectedProducts() > 0">
+                <strong>Produtos Afetados:</strong> {{ totalAffectedProducts() }}
+              </div>
+              
+              <div class="summary-item" *ngIf="bulkDeletionForm.get('moveProductsToCategory')?.value">
+                <strong>Mover produtos para:</strong>
+                {{ allAlternativeCategories().find(c => c.id == bulkDeletionForm.get('moveProductsToCategory')?.value)?.nome }}
+              </div>
+              
+              <div class="summary-item" *ngIf="bulkDeletionForm.get('reason')?.value">
+                <strong>Motivo:</strong> {{ bulkDeletionForm.get('reason')?.value }}
+              </div>
+            </div>
+
+            <!-- Categories List -->
+            <div class="categories-list">
+              <h4>Categorias que serão {{ bulkDeletionForm.get('deletionType')?.value === 'hard' ? 'excluídas' : 'desativadas' }}:</h4>
+              <div class="category-chips">
+                <span 
+                  *ngFor="let category of categories" 
+                  class="category-chip"
+                  [class.category-chip--with-products]="impactAnalyses().find(a => a.category.id === category.id)?.hasProducts">
+                  {{ category.nome }}
+                  <small *ngIf="impactAnalyses().find(a => a.category.id === category.id)?.hasProducts">
+                    ({{ impactAnalyses().find(a => a.category.id === category.id)?.totalProductsCount }} produtos)
+                  </small>
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Confirmation Input -->
+          <div class="confirmation-input">
+            <label for="bulkConfirmationText">
+              Para confirmar, digite exatamente: 
+              <strong>{{ getConfirmationText() }}</strong>
+            </label>
+            <input 
+              id="bulkConfirmationText"
+              type="text"
+              formControlName="confirmationText"
+              class="form-input"
+              [class.form-input--valid]="isConfirmationValid()"
+              [placeholder]="getConfirmationPlaceholder()"
+              autocomplete="off"
+              spellcheck="false">
+            
+            <div class="confirmation-status">
+              <span 
+                *ngIf="isConfirmationValid()" 
+                class="confirmation-status__valid"
+                aria-live="polite">
+                ✅ Confirmação válida
+              </span>
+              <span 
+                *ngIf="bulkDeletionForm.get('confirmationText')?.value && !isConfirmationValid()" 
+                class="confirmation-status__invalid"
+                aria-live="polite">
+                ❌ Texto não confere
+              </span>
+            </div>
+          </div>
+
+          <!-- Final Warning -->
+          <div class="final-warning" *ngIf="bulkDeletionForm.get('deletionType')?.value === 'hard'">
+            <div class="warning-icon" aria-hidden="true">⚠️</div>
+            <div class="warning-content">
+              <h4>Atenção: Ação Irreversível em Lote</h4>
+              <p>
+                {{ totalCategories() }} categoria(s) serão excluídas permanentemente. 
+                Você terá apenas 5 minutos para desfazer cada exclusão individualmente.
+              </p>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Modal Footer -->
+    <footer class="modal-footer">
+      <div class="modal-actions">
+        
+        <!-- Back Button -->
+        <button 
+          *ngIf="currentStep() !== 'analysis'"
+          type="button" 
+          class="btn btn--secondary"
+          (click)="onPreviousStep()">
+          ← Voltar
+        </button>
+
+        <!-- Cancel Button -->
+        <button 
+          type="button" 
+          class="btn btn--secondary"
+          (click)="onCancel()">
+          Cancelar
+        </button>
+
+        <!-- Next/Confirm Button -->
+        <button 
+          *ngIf="currentStep() !== 'confirmation'"
+          type="button" 
+          class="btn btn--primary"
+          [disabled]="!canProceed() || loading()"
+          (click)="onNextStep()">
+          Continuar →
+        </button>
+
+        <button 
+          *ngIf="currentStep() === 'confirmation'"
+          type="button" 
+          class="btn"
+          [class.btn--danger]="bulkDeletionForm.get('deletionType')?.value === 'hard'"
+          [class.btn--warning]="bulkDeletionForm.get('deletionType')?.value === 'soft'"
+          [disabled]="!canProceed() || !isConfirmationValid()"
+          (click)="onConfirm()">
+          <span *ngIf="bulkDeletionForm.get('deletionType')?.value === 'hard'">
+            🗑️ Excluir {{ totalCategories() }} Categoria(s)
+          </span>
+          <span *ngIf="bulkDeletionForm.get('deletionType')?.value === 'soft'">
+            🔒 Desativar {{ totalCategories() }} Categoria(s)
+          </span>
+        </button>
+
+      </div>
+
+      <!-- Keyboard Shortcuts Help -->
+      <div class="keyboard-shortcuts">
+        <small>
+          <kbd>Esc</kbd> Cancelar • 
+          <kbd>Ctrl+Enter</kbd> Confirmar
+        </small>
+      </div>
+    </footer>
+
+  </div>
+</div>

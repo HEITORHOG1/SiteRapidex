@@ -377,3 +377,36 @@
     </ul>
   </div>
 </div>
+
+<!-- Category Deletion Modal -->
+<app-category-deletion-modal
+  *ngIf="categoryToDelete() && selectedEstablishment$ | async as establishment"
+  [category]="categoryToDelete()!"
+  [estabelecimentoId]="establishment.id"
+  [isVisible]="showDeletionModal()"
+  (result)="onDeletionModalResult($event)"
+  (close)="onCloseDeletionModal()">
+</app-category-deletion-modal>
+
+<!-- Bulk Deletion Modal -->
+<app-bulk-deletion-modal
+  *ngIf="categoriesToBulkDelete().length > 0 && selectedEstablishment$ | async as establishment"
+  [categories]="categoriesToBulkDelete()"
+  [estabelecimentoId]="establishment.id"
+  [isVisible]="showBulkDeletionModal()"
+  (result)="onBulkDeletionModalResult($event)"
+  (close)="onCloseBulkDeletionModal()">
+</app-bulk-deletion-modal>
+
+<!-- Undo Notifications -->
+<div class="undo-notifications-container">
+  <app-undo-notification
+    *ngFor="let pendingUndo of (pendingUndos$ | async); trackBy: trackByUndoToken"
+    [pendingUndo]="pendingUndo"
+    [autoHide]="true"
+    [position]="'bottom'"
+    (undo)="onUndoDeletion($event)"
+    (dismiss)="onDismissUndoNotification($event)"
+    (expired)="onUndoNotificationExpired($event)">
+  </app-undo-notification>
+</div>

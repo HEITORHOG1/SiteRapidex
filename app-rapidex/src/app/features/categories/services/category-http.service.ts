@@ -13,7 +13,14 @@ import {
   CategoryListResponse,
   CategoryDetailResponse,
   CategoryValidationResponse,
-  CategoryDeletionValidationResponse
+  CategoryDeletionValidationResponse,
+  CategoryDeletionRequest,
+  CategoryDeletionResponse,
+  BulkCategoryDeletionRequest,
+  BulkCategoryDeletionResponse,
+  UndoCategoryDeletionRequest,
+  UndoCategoryDeletionResponse,
+  CategoryDeletionAuditEntry
 } from '../models/category-dto.models';
 import { ApiError, ErrorCodes } from '../../../data-access/models/auth.models';
 
@@ -136,6 +143,74 @@ export class CategoryHttpService {
 
     return this.http.delete<void>(url).pipe(
       catchError(error => this.handleError(error, `Erro ao excluir categoria ${categoryId}`))
+    );
+  }
+
+  /**
+   * Deletes a category with enhanced options (hard/soft delete, product migration)
+   */
+  deleteCategoryEnhanced(estabelecimentoId: number, request: CategoryDeletionRequest): Observable<CategoryDeletionResponse> {
+    this.validateEstablishmentId(estabelecimentoId);
+    this.validateCategoryId(request.categoryId);
+
+    const url = this.apiConfig.getConfiguredEndpoint('categoria', 'deleteEnhanced', {
+      estabelecimentoId: estabelecimentoId.toString(),
+      id: request.categoryId.toString()
+    });
+
+    return this.http.post<CategoryDeletionResponse>(url, request).pipe(
+      catchError(error => this.handleError(error, `Erro ao excluir categoria ${request.categoryId}`))
+    );
+  }
+
+  /**
+   * Deletes multiple categories in bulk
+   */
+  deleteBulkCategories(estabelecimentoId: number, request: BulkCategoryDeletionRequest): Observable<BulkCategoryDeletionResponse> {
+    this.validateEstablishmentId(estabelecimentoId);
+    
+    if (!request.categoryIds || request.categoryIds.length === 0) {
+      return throwError(() => this.createValidationError('Lista de categorias é obrigatória'));
+    }
+
+    const url = this.apiConfig.getConfiguredEndpoint('categoria', 'bulkDelete', {
+      estabelecimentoId: estabelecimentoId.toString()
+    });
+
+    return this.http.post<BulkCategoryDeletionResponse>(url, request).pipe(
+      catchError(error => this.handleError(error, 'Erro ao excluir categorias em lote'))
+    );
+  }
+
+  /**
+   * Undoes a category deletion
+   */
+  undoCategoryDeletion(request: UndoCategoryDeletionRequest): Observable<UndoCategoryDeletionResponse> {
+    if (!request.undoToken) {
+      return throwError(() => this.createValidationError('Token de desfazer é obrigatório'));
+    }
+
+    const url = this.apiConfig.getConfiguredEndpoint('categoria', 'undo');
+
+    return this.http.post<UndoCategoryDeletionResponse>(url, request).pipe(
+      catchError(error => this.handleError(error, 'Erro ao desfazer exclusão da categoria'))
+    );
+  }
+
+  /**
+   * Gets deletion audit trail for an establishment
+   */
+  getCategoryDeletionAuditTrail(estabelecimentoId: number, limit: number = 50): Observable<CategoryDeletionAuditEntry[]> {
+    this.validateEstablishmentId(estabelecimentoId);
+
+    const url = this.apiConfig.getConfiguredEndpoint('categoria', 'auditTrail', {
+      estabelecimentoId: estabelecimentoId.toString()
+    });
+
+    const params = new HttpParams().set('limit', limit.toString());
+
+    return this.http.get<CategoryDeletionAuditEntry[]>(url, { params }).pipe(
+      catchError(error => this.handleError(error, 'Erro ao carregar histórico de exclusões'))
     );
   }
 

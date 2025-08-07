@@ -2,13 +2,17 @@ import { Component, OnInit, OnDestroy, ChangeDetectionStrategy, signal, computed
 import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule, FormControl } from '@angular/forms';
 import { RouterModule } from '@angular/router';
-import { Subject, takeUntil, debounceTime, distinctUntilChanged, combineLatest, startWith } from 'rxjs';
+import { Subject, takeUntil, debounceTime, distinctUntilChanged, combineLatest, startWith, take } from 'rxjs';
 
 import { CategoryStateService } from '../../services/category-state.service';
 import { CategorySearchService, AdvancedFilters } from '../../services/category-search.service';
+import { CategoryDeletionService } from '../../services/category-deletion.service';
 import { EstabelecimentoService } from '../../../../core/services/estabelecimento.service';
 import { CategoryCardComponent } from '../category-card/category-card.component';
 import { AdvancedSearchComponent } from '../advanced-search/advanced-search.component';
+import { CategoryDeletionModalComponent, DeletionModalResult } from '../category-deletion-modal/category-deletion-modal.component';
+import { BulkDeletionModalComponent, BulkDeletionModalResult } from '../bulk-deletion-modal/bulk-deletion-modal.component';
+import { UndoNotificationComponent } from '../undo-notification/undo-notification.component';
 import { Category, CategoryFilters, PaginationState } from '../../models/category.models';
 
 export type ViewMode = 'grid' | 'list';
@@ -23,7 +27,10 @@ export type SortOption = 'nome' | 'dataCriacao' | 'dataAtualizacao';
     ReactiveFormsModule,
     RouterModule,
     CategoryCardComponent,
-    AdvancedSearchComponent
+    AdvancedSearchComponent,
+    CategoryDeletionModalComponent,
+    BulkDeletionModalComponent,
+    UndoNotificationComponent
   ],
   templateUrl: './category-list.component.html',
   styleUrls: ['./category-list.component.scss'],
@@ -32,6 +39,7 @@ export type SortOption = 'nome' | 'dataCriacao' | 'dataAtualizacao';
 export class CategoryListComponent implements OnInit, OnDestroy {
   private categoryState = inject(CategoryStateService);
   private categorySearch = inject(CategorySearchService);
+  private categoryDeletionService = inject(CategoryDeletionService);
   private estabelecimentoService = inject(EstabelecimentoService);
   private destroy$ = new Subject<void>();
 
@@ -55,6 +63,15 @@ export class CategoryListComponent implements OnInit, OnDestroy {
   selectedCategories = signal<Set<number>>(new Set());
   showBulkActions = computed(() => this.selectedCategories().size > 0);
   isSelectAllMode = signal(false);
+
+  // Deletion modal state
+  showDeletionModal = signal(false);
+  categoryToDelete = signal<Category | null>(null);
+  showBulkDeletionModal = signal(false);
+  categoriesToBulkDelete = signal<Category[]>([]);
+
+  // Undo notifications
+  pendingUndos$ = this.categoryDeletionService.getPendingUndos();
 
   // Reactive state from services
   categories$ = this.categorySearch.filteredCategories$;
@@ -315,12 +332,75 @@ export class CategoryListComponent implements OnInit, OnDestroy {
     const selectedIds = Array.from(this.selectedCategories());
     if (selectedIds.length === 0) return;
 
-    const confirmMessage = `Tem certeza que deseja excluir ${selectedIds.length} categoria(s) selecionada(s)?`;
-    if (confirm(confirmMessage)) {
-      // TODO: Implement bulk delete
-      console.log('Bulk delete:', selectedIds);
-      this.clearSelection();
+    // Get current categories to find selected ones
+    this.categories$.pipe(
+      takeUntil(this.destroy$),
+      take(1)
+    ).subscribe(categories => {
+      const selectedCategories = categories.filter(c => selectedIds.includes(c.id));
+      this.categoriesToBulkDelete.set(selectedCategories);
+      this.showBulkDeletionModal.set(true);
+    });
+  }
+
+  onBulkDeletionModalResult(result: BulkDeletionModalResult): void {
+    this.showBulkDeletionModal.set(false);
+    
+    if (result.confirmed && result.request) {
+      const establishment = this.estabelecimentoService.getSelectedEstabelecimento();
+      if (!establishment) return;
+
+      this.categoryDeletionService.deleteBulkCategories(establishment.id, result.request)
+        .pipe(takeUntil(this.destroy$))
+        .subscribe({
+          next: (response) => {
+            // Refresh the categories list
+            this.categoryState.loadCategories(establishment.id).subscribe();
+            this.clearSelection();
+            this.announceToScreenReader(
+              `${response.successfulDeletions} categoria(s) foram processadas com sucesso`
+            );
+          },
+          error: (error) => {
+            console.error('Error bulk deleting categories:', error);
+          }
+        });
     }
+    
+    this.categoriesToBulkDelete.set([]);
+  }
+
+  onCloseBulkDeletionModal(): void {
+    this.showBulkDeletionModal.set(false);
+    this.categoriesToBulkDelete.set([]);
+  }
+
+  // Undo notification methods
+  onUndoDeletion(undoToken: string): void {
+    this.categoryDeletionService.undoDeletion(undoToken)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: () => {
+          // Refresh the categories list
+          const establishment = this.estabelecimentoService.getSelectedEstabelecimento();
+          if (establishment) {
+            this.categoryState.loadCategories(establishment.id).subscribe();
+          }
+        },
+        error: (error) => {
+          console.error('Error undoing deletion:', error);
+        }
+      });
+  }
+
+  onDismissUndoNotification(undoToken: string): void {
+    // The notification will handle its own dismissal
+    // This method is here for consistency and future enhancements
+  }
+
+  onUndoNotificationExpired(undoToken: string): void {
+    // The notification will handle its own expiration
+    // This method is here for consistency and future enhancements
   }
 
   bulkToggleStatus(active: boolean): void {
@@ -347,7 +427,37 @@ export class CategoryListComponent implements OnInit, OnDestroy {
   }
 
   onDeleteCategory(category: Category): void {
-    this.deleteCategory.emit(category);
+    this.categoryToDelete.set(category);
+    this.showDeletionModal.set(true);
+  }
+
+  onDeletionModalResult(result: DeletionModalResult): void {
+    this.showDeletionModal.set(false);
+    
+    if (result.confirmed && result.request) {
+      const establishment = this.estabelecimentoService.getSelectedEstabelecimento();
+      if (!establishment) return;
+
+      this.categoryDeletionService.deleteCategory(establishment.id, result.request)
+        .pipe(takeUntil(this.destroy$))
+        .subscribe({
+          next: () => {
+            // Refresh the categories list
+            this.categoryState.loadCategories(establishment.id).subscribe();
+            this.announceToScreenReader(`Categoria "${this.categoryToDelete()?.nome}" foi processada com sucesso`);
+          },
+          error: (error) => {
+            console.error('Error deleting category:', error);
+          }
+        });
+    }
+    
+    this.categoryToDelete.set(null);
+  }
+
+  onCloseDeletionModal(): void {
+    this.showDeletionModal.set(false);
+    this.categoryToDelete.set(null);
   }
 
   onViewCategoryDetails(category: Category): void {
@@ -451,6 +561,10 @@ export class CategoryListComponent implements OnInit, OnDestroy {
 
   trackByPageNumber(index: number, page: number): number {
     return page;
+  }
+
+  trackByUndoToken(index: number, pendingUndo: any): string {
+    return pendingUndo.undoToken;
   }
 
   // Getters for template

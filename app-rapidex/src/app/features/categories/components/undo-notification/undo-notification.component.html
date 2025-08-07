@@ -1,0 +1,90 @@
+<div 
+  [class]="getNotificationClass()"
+  [attr.aria-label]="getAriaLabel()"
+  [attr.aria-live]="'polite'"
+  role="alert"
+  (keydown)="onKeyDown($event)"
+  tabindex="0">
+  
+  <!-- Progress Bar -->
+  <div class="progress-container">
+    <div 
+      class="progress-bar"
+      [class]="getProgressBarClass()"
+      [style.width.%]="progressPercentage()"
+      [attr.aria-valuenow]="progressPercentage()"
+      [attr.aria-valuemin]="0"
+      [attr.aria-valuemax]="100"
+      role="progressbar">
+    </div>
+  </div>
+
+  <!-- Notification Content -->
+  <div class="notification-content">
+    
+    <!-- Icon -->
+    <div class="notification-icon" aria-hidden="true">
+      <span *ngIf="pendingUndo.deletionType === 'hard'">🗑️</span>
+      <span *ngIf="pendingUndo.deletionType === 'soft'">🔒</span>
+    </div>
+
+    <!-- Message -->
+    <div class="notification-message">
+      <div class="notification-title">
+        Categoria "{{ pendingUndo.category.nome }}" foi {{ getDeletionTypeText() }}
+      </div>
+      
+      <div class="notification-details">
+        <span *ngIf="pendingUndo.affectedProductsCount > 0">
+          {{ pendingUndo.affectedProductsCount }} produto(s) afetado(s) • 
+        </span>
+        <span class="time-remaining">
+          {{ timeRemainingText() }} restante(s)
+        </span>
+      </div>
+    </div>
+
+    <!-- Actions -->
+    <div class="notification-actions">
+      
+      <!-- Undo Button -->
+      <button 
+        type="button"
+        class="undo-btn"
+        [class.undo-btn--loading]="isUndoing()"
+        [disabled]="isUndoing() || timeRemaining() <= 0"
+        [attr.aria-label]="getUndoButtonAriaLabel()"
+        (click)="onUndo()">
+        
+        <span *ngIf="!isUndoing()" class="undo-btn__text">
+          {{ getUndoActionText() }}
+        </span>
+        
+        <span *ngIf="isUndoing()" class="undo-btn__loading">
+          <span class="loading-spinner" aria-hidden="true"></span>
+          Desfazendo...
+        </span>
+      </button>
+
+      <!-- Dismiss Button -->
+      <button 
+        type="button"
+        class="dismiss-btn"
+        [disabled]="isUndoing()"
+        aria-label="Dispensar notificação"
+        title="Dispensar notificação"
+        (click)="onDismiss()">
+        <span aria-hidden="true">×</span>
+      </button>
+
+    </div>
+
+  </div>
+
+  <!-- Urgent Warning -->
+  <div *ngIf="timeRemaining() <= 30" class="urgent-warning" role="alert">
+    <span class="urgent-icon" aria-hidden="true">⚠️</span>
+    <span class="urgent-text">Tempo quase esgotado!</span>
+  </div>
+
+</div>

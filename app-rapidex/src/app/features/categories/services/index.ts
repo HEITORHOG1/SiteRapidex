@@ -16,3 +16,8 @@ export {
   type SearchHistory, 
   type AdvancedFilters 
 } from './category-search.service';
+export { 
+  CategoryDeletionService,
+  type DeletionImpactAnalysis,
+  type PendingUndo
+} from './category-deletion.service';

@@ -1,0 +1,394 @@
+<div 
+  class="modal-overlay" 
+  [class.modal-overlay--visible]="isVisible"
+  (click)="onClose()"
+  [attr.aria-hidden]="!isVisible"
+  role="dialog"
+  [attr.aria-label]="getModalAriaLabel()"
+  (keydown)="onKeyDown($event)">
+  
+  <div 
+    class="modal-content" 
+    (click)="$event.stopPropagation()"
+    [attr.aria-labelledby]="'modal-title'"
+    [attr.aria-describedby]="'modal-description'">
+    
+    <!-- Modal Header -->
+    <header class="modal-header">
+      <div class="modal-header__content">
+        <h2 id="modal-title" class="modal-title">
+          <span class="modal-title__icon" aria-hidden="true">⚠️</span>
+          {{ getStepTitle() }}
+        </h2>
+        <p id="modal-description" class="modal-description">
+          {{ getStepDescription() }}
+        </p>
+      </div>
+      
+      <button 
+        type="button" 
+        class="modal-close"
+        (click)="onClose()"
+        aria-label="Fechar modal"
+        title="Fechar modal">
+        <span aria-hidden="true">×</span>
+      </button>
+    </header>
+
+    <!-- Progress Indicator -->
+    <div class="progress-indicator" [attr.aria-label]="getStepAriaLabel()">
+      <div class="progress-steps">
+        <div 
+          class="progress-step"
+          [class.progress-step--active]="currentStep() === 'analysis'"
+          [class.progress-step--completed]="currentStep() !== 'analysis'">
+          <span class="progress-step__number">1</span>
+          <span class="progress-step__label">Análise</span>
+        </div>
+        
+        <div 
+          class="progress-step"
+          [class.progress-step--active]="currentStep() === 'options'"
+          [class.progress-step--completed]="currentStep() === 'confirmation'"
+          *ngIf="impactAnalysis()?.hasProducts">
+          <span class="progress-step__number">2</span>
+          <span class="progress-step__label">Opções</span>
+        </div>
+        
+        <div 
+          class="progress-step"
+          [class.progress-step--active]="currentStep() === 'confirmation'">
+          <span class="progress-step__number">{{ impactAnalysis()?.hasProducts ? '3' : '2' }}</span>
+          <span class="progress-step__label">Confirmação</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal Body -->
+    <div class="modal-body">
+      
+      <!-- Loading State -->
+      <div *ngIf="loading()" class="loading-state">
+        <div class="loading-spinner" aria-hidden="true"></div>
+        <p>Analisando impacto da exclusão...</p>
+      </div>
+
+      <!-- Error State -->
+      <div *ngIf="error()" class="error-state" role="alert">
+        <div class="error-icon" aria-hidden="true">❌</div>
+        <h3>Erro na Análise</h3>
+        <p>{{ error() }}</p>
+        <button type="button" class="btn btn--secondary" (click)="loadImpactAnalysis()">
+          Tentar Novamente
+        </button>
+      </div>
+
+      <!-- Analysis Step -->
+      <div *ngIf="currentStep() === 'analysis' && impactAnalysis() && !loading() && !error()" class="step-content">
+        <div class="impact-analysis">
+          
+          <!-- Category Info -->
+          <div class="category-info">
+            <h3>Categoria a ser excluída:</h3>
+            <div class="category-card">
+              <div class="category-card__header">
+                <h4>{{ category.nome }}</h4>
+                <span class="category-status" [class.category-status--active]="category.ativo">
+                  {{ category.ativo ? 'Ativa' : 'Inativa' }}
+                </span>
+              </div>
+              <p *ngIf="category.descricao" class="category-description">
+                {{ category.descricao }}
+              </p>
+            </div>
+          </div>
+
+          <!-- Impact Summary -->
+          <div class="impact-summary">
+            <h3>Resumo do Impacto:</h3>
+            
+            <div class="impact-metrics">
+              <div class="impact-metric">
+                <span class="impact-metric__value">{{ impactAnalysis()!.totalProductsCount }}</span>
+                <span class="impact-metric__label">Produtos Afetados</span>
+              </div>
+              
+              <div class="impact-metric" *ngIf="impactAnalysis()!.activeProductsCount > 0">
+                <span class="impact-metric__value impact-metric__value--warning">
+                  {{ impactAnalysis()!.activeProductsCount }}
+                </span>
+                <span class="impact-metric__label">Produtos Ativos</span>
+              </div>
+              
+              <div class="impact-metric">
+                <span class="impact-metric__value" [class]="getRiskLevelClass()">
+                  {{ getRiskLevelText() }}
+                </span>
+                <span class="impact-metric__label">Nível de Risco</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Risks -->
+          <div *ngIf="impactAnalysis()!.risks.length > 0" class="risks-section">
+            <h3>⚠️ Riscos Identificados:</h3>
+            <ul class="risks-list">
+              <li *ngFor="let risk of impactAnalysis()!.risks" class="risk-item">
+                {{ risk }}
+              </li>
+            </ul>
+          </div>
+
+          <!-- Recommendations -->
+          <div *ngIf="impactAnalysis()!.recommendations.length > 0" class="recommendations-section">
+            <h3>💡 Recomendações:</h3>
+            <ul class="recommendations-list">
+              <li *ngFor="let recommendation of impactAnalysis()!.recommendations" class="recommendation-item">
+                {{ recommendation }}
+              </li>
+            </ul>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- Options Step -->
+      <div *ngIf="currentStep() === 'options' && impactAnalysis()" class="step-content">
+        <form [formGroup]="deletionForm" class="deletion-options">
+          
+          <h3>Escolha o tipo de exclusão:</h3>
+          
+          <!-- Deletion Type Options -->
+          <div class="deletion-types">
+            
+            <!-- Soft Delete Option -->
+            <label class="deletion-type-option">
+              <input 
+                type="radio" 
+                name="deletionType" 
+                value="soft"
+                formControlName="deletionType"
+                (change)="onDeletionTypeChange('soft')">
+              
+              <div class="deletion-type-content">
+                <div class="deletion-type-header">
+                  <span class="deletion-type-icon deletion-type-icon--soft" aria-hidden="true">🔒</span>
+                  <h4>{{ getDeletionTypeLabel('soft') }}</h4>
+                  <span class="deletion-type-badge deletion-type-badge--recommended">Recomendado</span>
+                </div>
+                <p class="deletion-type-description">
+                  {{ getDeletionTypeDescription('soft') }}
+                </p>
+                <ul class="deletion-type-benefits">
+                  <li>✅ Produtos permanecem intactos</li>
+                  <li>✅ Pode ser revertido facilmente</li>
+                  <li>✅ Histórico preservado</li>
+                </ul>
+              </div>
+            </label>
+
+            <!-- Hard Delete Option -->
+            <label class="deletion-type-option" [class.deletion-type-option--disabled]="!impactAnalysis()!.canDelete">
+              <input 
+                type="radio" 
+                name="deletionType" 
+                value="hard"
+                formControlName="deletionType"
+                [disabled]="!impactAnalysis()!.canDelete"
+                (change)="onDeletionTypeChange('hard')">
+              
+              <div class="deletion-type-content">
+                <div class="deletion-type-header">
+                  <span class="deletion-type-icon deletion-type-icon--hard" aria-hidden="true">🗑️</span>
+                  <h4>{{ getDeletionTypeLabel('hard') }}</h4>
+                  <span class="deletion-type-badge deletion-type-badge--warning">Permanente</span>
+                </div>
+                <p class="deletion-type-description">
+                  {{ getDeletionTypeDescription('hard') }}
+                </p>
+                <ul class="deletion-type-risks" *ngIf="impactAnalysis()!.hasProducts">
+                  <li>⚠️ Produtos ficarão sem categoria</li>
+                  <li>⚠️ Ação irreversível após 5 minutos</li>
+                  <li>⚠️ Histórico será perdido</li>
+                </ul>
+                <div *ngIf="!impactAnalysis()!.canDelete" class="deletion-type-blocked">
+                  <p>❌ Não é possível excluir permanentemente esta categoria pois ela possui produtos ativos.</p>
+                </div>
+              </div>
+            </label>
+          </div>
+
+          <!-- Product Migration Options -->
+          <div *ngIf="showProductMigration()" class="product-migration">
+            <h4>Mover produtos para outra categoria:</h4>
+            <select 
+              formControlName="moveProductsToCategory"
+              class="form-select"
+              aria-label="Selecionar categoria de destino">
+              <option value="">Selecione uma categoria...</option>
+              <option 
+                *ngFor="let altCategory of impactAnalysis()!.alternativeCategories" 
+                [value]="altCategory.id">
+                {{ altCategory.nome }}
+              </option>
+            </select>
+            <p class="form-help">
+              Os {{ impactAnalysis()!.totalProductsCount }} produto(s) serão movidos para a categoria selecionada.
+            </p>
+          </div>
+
+          <!-- Reason Field -->
+          <div class="reason-field">
+            <label for="reason">Motivo da exclusão (opcional):</label>
+            <textarea 
+              id="reason"
+              formControlName="reason"
+              class="form-textarea"
+              rows="3"
+              placeholder="Descreva o motivo da exclusão para auditoria..."
+              maxlength="500"></textarea>
+          </div>
+
+        </form>
+      </div>
+
+      <!-- Confirmation Step -->
+      <div *ngIf="currentStep() === 'confirmation' && impactAnalysis()" class="step-content">
+        <div class="confirmation-step">
+          
+          <!-- Final Summary -->
+          <div class="final-summary">
+            <h3>Resumo da Ação:</h3>
+            
+            <div class="summary-item">
+              <strong>Categoria:</strong> {{ category.nome }}
+            </div>
+            
+            <div class="summary-item">
+              <strong>Tipo de Exclusão:</strong> 
+              {{ getDeletionTypeLabel(deletionForm.get('deletionType')?.value) }}
+            </div>
+            
+            <div class="summary-item" *ngIf="impactAnalysis()!.hasProducts">
+              <strong>Produtos Afetados:</strong> {{ impactAnalysis()!.totalProductsCount }}
+            </div>
+            
+            <div class="summary-item" *ngIf="deletionForm.get('moveProductsToCategory')?.value">
+              <strong>Mover produtos para:</strong>
+              {{ impactAnalysis()!.alternativeCategories.find(c => c.id == deletionForm.get('moveProductsToCategory')?.value)?.nome }}
+            </div>
+            
+            <div class="summary-item" *ngIf="deletionForm.get('reason')?.value">
+              <strong>Motivo:</strong> {{ deletionForm.get('reason')?.value }}
+            </div>
+          </div>
+
+          <!-- Confirmation Input -->
+          <div class="confirmation-input">
+            <label for="confirmationText">
+              Para confirmar, digite exatamente: 
+              <strong>{{ getConfirmationText() }}</strong>
+            </label>
+            <input 
+              id="confirmationText"
+              type="text"
+              formControlName="confirmationText"
+              class="form-input"
+              [class.form-input--valid]="isConfirmationValid()"
+              [placeholder]="getConfirmationPlaceholder()"
+              autocomplete="off"
+              spellcheck="false">
+            
+            <div class="confirmation-status">
+              <span 
+                *ngIf="isConfirmationValid()" 
+                class="confirmation-status__valid"
+                aria-live="polite">
+                ✅ Confirmação válida
+              </span>
+              <span 
+                *ngIf="deletionForm.get('confirmationText')?.value && !isConfirmationValid()" 
+                class="confirmation-status__invalid"
+                aria-live="polite">
+                ❌ Texto não confere
+              </span>
+            </div>
+          </div>
+
+          <!-- Final Warning -->
+          <div class="final-warning" *ngIf="deletionForm.get('deletionType')?.value === 'hard'">
+            <div class="warning-icon" aria-hidden="true">⚠️</div>
+            <div class="warning-content">
+              <h4>Atenção: Ação Irreversível</h4>
+              <p>
+                Esta categoria será excluída permanentemente. 
+                Você terá apenas 5 minutos para desfazer esta ação.
+              </p>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Modal Footer -->
+    <footer class="modal-footer">
+      <div class="modal-actions">
+        
+        <!-- Back Button -->
+        <button 
+          *ngIf="currentStep() !== 'analysis'"
+          type="button" 
+          class="btn btn--secondary"
+          (click)="onPreviousStep()">
+          ← Voltar
+        </button>
+
+        <!-- Cancel Button -->
+        <button 
+          type="button" 
+          class="btn btn--secondary"
+          (click)="onCancel()">
+          Cancelar
+        </button>
+
+        <!-- Next/Confirm Button -->
+        <button 
+          *ngIf="currentStep() !== 'confirmation'"
+          type="button" 
+          class="btn btn--primary"
+          [disabled]="!canProceed() || loading()"
+          (click)="onNextStep()">
+          Continuar →
+        </button>
+
+        <button 
+          *ngIf="currentStep() === 'confirmation'"
+          type="button" 
+          class="btn"
+          [class.btn--danger]="deletionForm.get('deletionType')?.value === 'hard'"
+          [class.btn--warning]="deletionForm.get('deletionType')?.value === 'soft'"
+          [disabled]="!canProceed() || !isConfirmationValid()"
+          (click)="onConfirm()">
+          <span *ngIf="deletionForm.get('deletionType')?.value === 'hard'">
+            🗑️ Excluir Permanentemente
+          </span>
+          <span *ngIf="deletionForm.get('deletionType')?.value === 'soft'">
+            🔒 Desativar Categoria
+          </span>
+        </button>
+
+      </div>
+
+      <!-- Keyboard Shortcuts Help -->
+      <div class="keyboard-shortcuts">
+        <small>
+          <kbd>Esc</kbd> Cancelar • 
+          <kbd>Ctrl+Enter</kbd> Confirmar
+        </small>
+      </div>
+    </footer>
+
+  </div>
+</div>
