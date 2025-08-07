@@ -1,0 +1,1 @@
+export { CategoryDetailComponent } from './category-detail.component';

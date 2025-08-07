@@ -1,0 +1,232 @@
+<div class="category-detail" 
+     [attr.aria-label]="getAriaLabel()"
+     [class.category-detail--print]="printMode">
+
+  <!-- Breadcrumb Navigation -->
+  <nav class="breadcrumb" 
+       *ngIf="showBreadcrumb && !printMode"
+       aria-label="Navegação estrutural">
+    <ol class="breadcrumb__list">
+      <li class="breadcrumb__item">
+        <button type="button" 
+                class="breadcrumb__link"
+                (click)="navigateToList()"
+                aria-label="Voltar para lista de categorias">
+          <span class="breadcrumb__icon" aria-hidden="true">🏠</span>
+          Categorias
+        </button>
+      </li>
+      <li class="breadcrumb__item breadcrumb__item--current" 
+          aria-current="page">
+        <span class="breadcrumb__text">
+          {{ category()?.nome || 'Detalhes' }}
+        </span>
+      </li>
+    </ol>
+  </nav>
+
+  <!-- Loading State -->
+  <div class="loading-state" 
+       *ngIf="loading()"
+       role="status" 
+       aria-live="polite">
+    <div class="loading-state__spinner" aria-hidden="true"></div>
+    <p class="loading-state__text">Carregando detalhes da categoria...</p>
+  </div>
+
+  <!-- Error State -->
+  <div class="error-state" 
+       *ngIf="error() && !loading()"
+       role="alert" 
+       aria-live="assertive">
+    <div class="error-state__icon" aria-hidden="true">⚠️</div>
+    <div class="error-state__content">
+      <h3 class="error-state__title">Erro ao carregar categoria</h3>
+      <p class="error-state__message">{{ error() }}</p>
+      <div class="error-state__actions">
+        <button type="button" 
+                class="btn btn--primary"
+                (click)="onRetry()">
+          Tentar novamente
+        </button>
+        <button type="button" 
+                class="btn btn--secondary"
+                (click)="onBack()">
+          Voltar
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Category Detail Content -->
+  <div class="category-content" 
+       *ngIf="category() && !loading() && !error()">
+
+    <!-- Header Section -->
+    <header class="category-header">
+      <div class="category-header__main">
+        <h1 class="category-header__title">{{ category()?.nome }}</h1>
+        <div class="category-header__status">
+          <span class="status-badge" 
+                [class]="getStatusClass()"
+                [attr.aria-label]="'Status da categoria: ' + getStatusText()">
+            {{ getStatusText() }}
+          </span>
+        </div>
+      </div>
+
+      <!-- Action Buttons -->
+      <div class="category-header__actions" 
+           *ngIf="showActions && !printMode">
+        <button type="button" 
+                class="btn btn--secondary btn--icon"
+                (click)="onPrint()"
+                aria-label="Imprimir detalhes da categoria">
+          <span class="btn__icon" aria-hidden="true">🖨️</span>
+          Imprimir
+        </button>
+        <button type="button" 
+                class="btn btn--primary btn--icon"
+                (click)="onEdit()"
+                [attr.aria-label]="'Editar categoria ' + category()?.nome">
+          <span class="btn__icon" aria-hidden="true">✏️</span>
+          Editar
+        </button>
+        <button type="button" 
+                class="btn btn--danger btn--icon"
+                (click)="onDelete()"
+                [disabled]="!canDelete()"
+                [attr.aria-label]="canDelete() ? 
+                  ('Excluir categoria ' + category()?.nome) : 
+                  'Não é possível excluir categoria com produtos'">
+          <span class="btn__icon" aria-hidden="true">🗑️</span>
+          Excluir
+        </button>
+      </div>
+    </header>
+
+    <!-- Category Information -->
+    <section class="category-info" 
+             aria-labelledby="info-heading">
+      <h2 id="info-heading" class="category-info__title">Informações da Categoria</h2>
+      
+      <div class="category-info__grid">
+        <!-- Description -->
+        <div class="info-item">
+          <dt class="info-item__label">Descrição</dt>
+          <dd class="info-item__value">
+            <p class="category-description" 
+               *ngIf="category()?.descricao; else noDescription">
+              {{ category()?.descricao }}
+            </p>
+            <ng-template #noDescription>
+              <span class="text-muted">Nenhuma descrição fornecida</span>
+            </ng-template>
+          </dd>
+        </div>
+
+        <!-- Creation Date -->
+        <div class="info-item">
+          <dt class="info-item__label">Data de Criação</dt>
+          <dd class="info-item__value">
+            <time [dateTime]="category()?.dataCriacao">
+              {{ createdDate() }}
+            </time>
+          </dd>
+        </div>
+
+        <!-- Last Update -->
+        <div class="info-item">
+          <dt class="info-item__label">Última Atualização</dt>
+          <dd class="info-item__value">
+            <time [dateTime]="category()?.dataAtualizacao">
+              {{ updatedDate() }}
+            </time>
+          </dd>
+        </div>
+
+        <!-- Product Count -->
+        <div class="info-item">
+          <dt class="info-item__label">Produtos</dt>
+          <dd class="info-item__value">
+            <span class="product-count" 
+                  [class.product-count--zero]="!hasProducts()">
+              {{ getProductCountText() }}
+            </span>
+          </dd>
+        </div>
+      </div>
+    </section>
+
+    <!-- Related Products Section -->
+    <section class="related-products" 
+             aria-labelledby="products-heading"
+             *ngIf="hasProducts()">
+      <h2 id="products-heading" class="related-products__title">
+        Produtos Relacionados
+        <span class="related-products__count" aria-hidden="true">
+          ({{ productCount() }})
+        </span>
+      </h2>
+
+      <div class="products-list" 
+           role="list"
+           aria-label="Lista de produtos da categoria">
+        <div class="product-item" 
+             *ngFor="let product of products(); trackBy: trackByProduct"
+             role="listitem">
+          <div class="product-item__content">
+            <h3 class="product-item__name">{{ product.nome }}</h3>
+            <span class="product-item__status" 
+                  [class.product-item__status--active]="product.ativo"
+                  [class.product-item__status--inactive]="!product.ativo"
+                  [attr.aria-label]="'Status do produto: ' + (product.ativo ? 'Ativo' : 'Inativo')">
+              {{ product.ativo ? 'Ativo' : 'Inativo' }}
+            </span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Empty Products State -->
+    <section class="empty-products" 
+             aria-labelledby="empty-heading"
+             *ngIf="!hasProducts()">
+      <div class="empty-products__content">
+        <div class="empty-products__icon" aria-hidden="true">📦</div>
+        <h2 id="empty-heading" class="empty-products__title">
+          Nenhum produto cadastrado
+        </h2>
+        <p class="empty-products__description">
+          Esta categoria ainda não possui produtos associados.
+        </p>
+        <div class="empty-products__actions" *ngIf="!printMode">
+          <button type="button" 
+                  class="btn btn--primary"
+                  aria-label="Adicionar primeiro produto à categoria">
+            Adicionar Produto
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Back Button (Mobile) -->
+    <div class="category-actions" 
+         *ngIf="!printMode">
+      <button type="button" 
+              class="btn btn--secondary btn--full-width"
+              (click)="onBack()"
+              aria-label="Voltar para lista de categorias">
+        <span class="btn__icon" aria-hidden="true">←</span>
+        Voltar para Lista
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Print-only Footer -->
+<footer class="print-footer" *ngIf="printMode">
+  <p class="print-footer__text">
+    Relatório gerado em {{ getCurrentDate() }}
+  </p>
+</footer>

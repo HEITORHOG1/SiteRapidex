@@ -1,0 +1,215 @@
+<form 
+  [formGroup]="categoryForm" 
+  (ngSubmit)="onSubmit()" 
+  (keydown)="onKeyDown($event)"
+  class="category-form"
+  novalidate
+  role="form"
+  [attr.aria-label]="isEditMode() ? 'Editar categoria' : 'Criar nova categoria'"
+>
+  <!-- Form Header -->
+  <div class="form-header">
+    <h2 class="form-title">
+      {{ isEditMode() ? 'Editar Categoria' : 'Nova Categoria' }}
+    </h2>
+    
+    <!-- Auto-save indicator -->
+    @if (autoSaving()) {
+      <div class="auto-save-indicator" aria-live="polite">
+        <span class="auto-save-icon" aria-hidden="true">💾</span>
+        <span class="auto-save-text">Salvando automaticamente...</span>
+      </div>
+    }
+  </div>
+
+  <!-- Form Fields -->
+  <div class="form-body">
+    
+    <!-- Nome Field -->
+    <div class="form-field">
+      <label for="category-name" class="form-label required">
+        Nome da Categoria
+      </label>
+      
+      <div class="input-wrapper">
+        <input
+          #nameInput
+          id="category-name"
+          type="text"
+          formControlName="nome"
+          class="form-input"
+          [class.error]="nameControl?.invalid && nameControl?.touched"
+          [class.validating]="validatingName()"
+          placeholder="Digite o nome da categoria"
+          maxlength="100"
+          autocomplete="off"
+          spellcheck="true"
+          [attr.aria-invalid]="nameControl?.invalid && nameControl?.touched"
+          [attr.aria-describedby]="'name-help' + (getFieldError('nome') ? ' name-error' : '')"
+        />
+        
+        <!-- Validation indicator -->
+        @if (validatingName()) {
+          <div class="validation-spinner" aria-hidden="true">
+            <div class="spinner"></div>
+          </div>
+        }
+        
+        <!-- Character counter -->
+        <div class="character-counter" aria-live="polite">
+          {{ nameControl?.value?.length || 0 }}/100
+        </div>
+      </div>
+      
+      <!-- Help text -->
+      <div id="name-help" class="form-help">
+        Nome único para identificar a categoria (2-100 caracteres)
+      </div>
+      
+      <!-- Error message -->
+      @if (getFieldError('nome'); as error) {
+        <div id="name-error" class="form-error" role="alert" aria-live="polite">
+          <span class="error-icon" aria-hidden="true">⚠️</span>
+          {{ error }}
+        </div>
+      }
+    </div>
+
+    <!-- Descrição Field -->
+    <div class="form-field">
+      <label for="category-description" class="form-label">
+        Descrição
+      </label>
+      
+      <div class="input-wrapper">
+        <textarea
+          #descriptionInput
+          id="category-description"
+          formControlName="descricao"
+          class="form-textarea"
+          [class.error]="descricaoControl?.invalid && descricaoControl?.touched"
+          placeholder="Descreva a categoria (opcional)"
+          maxlength="500"
+          rows="3"
+          spellcheck="true"
+          [attr.aria-invalid]="descricaoControl?.invalid && descricaoControl?.touched"
+          [attr.aria-describedby]="'description-help' + (getFieldError('descricao') ? ' description-error' : '')"
+        ></textarea>
+        
+        <!-- Character counter -->
+        <div class="character-counter" aria-live="polite">
+          {{ descricaoControl?.value?.length || 0 }}/500
+        </div>
+      </div>
+      
+      <!-- Help text -->
+      <div id="description-help" class="form-help">
+        Descrição opcional para ajudar a identificar a categoria
+      </div>
+      
+      <!-- Error message -->
+      @if (getFieldError('descricao'); as error) {
+        <div id="description-error" class="form-error" role="alert" aria-live="polite">
+          <span class="error-icon" aria-hidden="true">⚠️</span>
+          {{ error }}
+        </div>
+      }
+    </div>
+
+    <!-- Ativo Field (only in edit mode) -->
+    @if (isEditMode()) {
+      <div class="form-field">
+        <div class="checkbox-wrapper">
+          <input
+            id="category-active"
+            type="checkbox"
+            formControlName="ativo"
+            class="form-checkbox"
+            [attr.aria-describedby]="'active-help'"
+          />
+          <label for="category-active" class="checkbox-label">
+            Categoria ativa
+          </label>
+        </div>
+        
+        <!-- Help text -->
+        <div id="active-help" class="form-help">
+          Categorias inativas não aparecem para seleção em novos produtos
+        </div>
+      </div>
+    }
+  </div>
+
+  <!-- Form Actions -->
+  <div class="form-actions">
+    <button
+      type="button"
+      class="btn btn-secondary"
+      (click)="onCancel()"
+      [disabled]="submitting()"
+      [attr.aria-label]="'Cancelar ' + (isEditMode() ? 'edição' : 'criação') + ' da categoria'"
+    >
+      <span class="btn-icon" aria-hidden="true">✕</span>
+      Cancelar
+    </button>
+    
+    <button
+      type="submit"
+      class="btn btn-primary"
+      [disabled]="!canSubmit()"
+      [class.loading]="submitting()"
+      [attr.aria-label]="(isEditMode() ? 'Salvar alterações' : 'Criar categoria') + (submitting() ? ' - Processando...' : '')"
+    >
+      @if (submitting()) {
+        <div class="btn-spinner" aria-hidden="true">
+          <div class="spinner"></div>
+        </div>
+      } @else {
+        <span class="btn-icon" aria-hidden="true">
+          {{ isEditMode() ? '💾' : '➕' }}
+        </span>
+      }
+      
+      <span class="btn-text">
+        @if (submitting()) {
+          {{ isEditMode() ? 'Salvando...' : 'Criando...' }}
+        } @else {
+          {{ isEditMode() ? 'Salvar Alterações' : 'Criar Categoria' }}
+        }
+      </span>
+    </button>
+  </div>
+
+  <!-- Loading overlay for form submission -->
+  @if (loading()) {
+    <div class="form-loading-overlay" aria-live="polite">
+      <rx-loading-spinner 
+        message="Processando categoria..."
+        size="medium"
+        [overlay]="true"
+      ></rx-loading-spinner>
+    </div>
+  }
+
+  <!-- Keyboard shortcuts help -->
+  <div class="keyboard-shortcuts" aria-label="Atalhos de teclado disponíveis">
+    <small class="shortcuts-text">
+      <strong>Atalhos:</strong> 
+      <kbd>Ctrl+S</kbd> para salvar, 
+      <kbd>Esc</kbd> para cancelar
+    </small>
+  </div>
+</form>
+
+<!-- Screen reader announcements -->
+<div aria-live="polite" aria-atomic="true" class="sr-only">
+  @if (validatingName()) {
+    Validando nome da categoria...
+  }
+  @if (submitting()) {
+    {{ isEditMode() ? 'Salvando categoria...' : 'Criando categoria...' }}
+  }
+  @if (autoSaving()) {
+    Salvando alterações automaticamente...
+  }
+</div>

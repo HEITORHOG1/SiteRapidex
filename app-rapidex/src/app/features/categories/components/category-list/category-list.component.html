@@ -1,0 +1,448 @@
+<div 
+  #categoryListContainer
+  class="category-list"
+  [attr.aria-label]="'Lista de categorias do estabelecimento'"
+  role="main">
+
+  <!-- Header Section -->
+  <div class="category-list__header">
+    <div class="category-list__title-section">
+      <h1 class="category-list__title">Categorias</h1>
+      <p class="category-list__subtitle" *ngIf="selectedEstablishment$ | async as establishment">
+        Gerenciar categorias de {{ establishment.nomeFantasia }}
+      </p>
+    </div>
+
+    <div class="category-list__header-actions">
+      <button 
+        class="btn btn--primary category-list__create-btn"
+        (click)="onCreateCategory()"
+        [attr.aria-label]="'Criar nova categoria'"
+        type="button">
+        <span aria-hidden="true">➕</span>
+        Nova Categoria
+      </button>
+    </div>
+  </div>
+
+  <!-- Filters and Controls Section -->
+  <div class="category-list__controls">
+    <!-- Search and Filters -->
+    <div class="category-list__filters">
+      <!-- Search Input -->
+      <div class="category-list__search">
+        <label for="category-search" class="sr-only">Buscar categorias</label>
+        <div class="search-input">
+          <input
+            #searchInput
+            id="category-search"
+            type="text"
+            class="search-input__field"
+            placeholder="Buscar categorias..."
+            [formControl]="searchControl"
+            [attr.aria-describedby]="'search-help'"
+            autocomplete="off">
+          <button
+            *ngIf="searchControl.value"
+            class="search-input__clear"
+            (click)="clearSearch()"
+            [attr.aria-label]="'Limpar busca'"
+            type="button">
+            <span aria-hidden="true">✕</span>
+          </button>
+          <span aria-hidden="true" class="search-input__icon">🔍</span>
+        </div>
+        <div id="search-help" class="sr-only">
+          Digite para buscar por nome ou descrição da categoria
+        </div>
+      </div>
+
+      <!-- Status Filter -->
+      <div class="category-list__filter">
+        <label for="status-filter" class="filter-label">Status:</label>
+        <select
+          id="status-filter"
+          class="filter-select"
+          [formControl]="statusFilterControl"
+          [attr.aria-describedby]="'status-filter-help'">
+          <option [ngValue]="null">Todos</option>
+          <option [ngValue]="true">Ativas</option>
+          <option [ngValue]="false">Inativas</option>
+        </select>
+        <div id="status-filter-help" class="sr-only">
+          Filtrar categorias por status ativo ou inativo
+        </div>
+      </div>
+
+      <!-- Sort Controls -->
+      <div class="category-list__sort">
+        <label for="sort-by" class="filter-label">Ordenar por:</label>
+        <select
+          id="sort-by"
+          class="filter-select"
+          [formControl]="sortByControl">
+          <option value="nome">Nome</option>
+          <option value="dataCriacao">Data de Criação</option>
+          <option value="dataAtualizacao">Última Atualização</option>
+        </select>
+        
+        <button
+          class="sort-order-btn"
+          (click)="sortOrderControl.setValue(sortOrderControl.value === 'asc' ? 'desc' : 'asc')"
+          [attr.aria-label]="'Alterar ordem de classificação para ' + (sortOrderControl.value === 'asc' ? 'decrescente' : 'crescente')"
+          type="button">
+          <span aria-hidden="true">{{ sortOrderControl.value === 'asc' ? '↑' : '↓' }}</span>
+        </button>
+      </div>
+
+      <!-- Clear Filters -->
+      <button
+        class="btn btn--secondary category-list__clear-filters"
+        (click)="clearAllFilters()"
+        [attr.aria-label]="'Limpar todos os filtros'"
+        type="button">
+        <span aria-hidden="true">🗑️</span>
+        Limpar Filtros
+      </button>
+    </div>
+
+    <!-- View Mode and Actions -->
+    <div class="category-list__view-controls">
+      <!-- View Mode Toggle -->
+      <div class="view-mode-toggle" role="group" [attr.aria-label]="'Modo de visualização'">
+        <button
+          class="view-mode-toggle__btn"
+          [class.view-mode-toggle__btn--active]="viewMode() === 'grid'"
+          (click)="setViewMode('grid')"
+          [attr.aria-label]="'Visualizar como grade'"
+          [attr.aria-pressed]="viewMode() === 'grid'"
+          type="button">
+          <span aria-hidden="true">⊞</span>
+          <span class="sr-only">Grade</span>
+        </button>
+        <button
+          class="view-mode-toggle__btn"
+          [class.view-mode-toggle__btn--active]="viewMode() === 'list'"
+          (click)="setViewMode('list')"
+          [attr.aria-label]="'Visualizar como lista'"
+          [attr.aria-pressed]="viewMode() === 'list'"
+          type="button">
+          <span aria-hidden="true">📋</span>
+          <span class="sr-only">Lista</span>
+        </button>
+      </div>
+
+      <!-- Refresh Button -->
+      <button
+        class="btn btn--secondary category-list__refresh"
+        (click)="refreshCategories()"
+        [attr.aria-label]="'Atualizar lista de categorias'"
+        [disabled]="loading$ | async"
+        type="button">
+        <span aria-hidden="true">🔄</span>
+        <span class="sr-only">Atualizar</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Bulk Actions Bar -->
+  <div 
+    *ngIf="showBulkActions()"
+    class="category-list__bulk-actions"
+    [attr.aria-label]="getSelectedCountText()"
+    role="toolbar">
+    <div class="bulk-actions__info">
+      <span class="bulk-actions__count">{{ getSelectedCountText() }}</span>
+    </div>
+    <div class="bulk-actions__buttons">
+      <button
+        class="btn btn--secondary bulk-actions__btn"
+        (click)="bulkToggleStatus(true)"
+        [attr.aria-label]="'Ativar categorias selecionadas'"
+        type="button">
+        <span aria-hidden="true">✅</span>
+        Ativar
+      </button>
+      <button
+        class="btn btn--secondary bulk-actions__btn"
+        (click)="bulkToggleStatus(false)"
+        [attr.aria-label]="'Desativar categorias selecionadas'"
+        type="button">
+        <span aria-hidden="true">❌</span>
+        Desativar
+      </button>
+      <button
+        class="btn btn--danger bulk-actions__btn"
+        (click)="bulkDeleteSelected()"
+        [attr.aria-label]="'Excluir categorias selecionadas'"
+        type="button">
+        <span aria-hidden="true">🗑️</span>
+        Excluir
+      </button>
+      <button
+        class="btn btn--ghost bulk-actions__btn"
+        (click)="clearSelection()"
+        [attr.aria-label]="'Cancelar seleção'"
+        type="button">
+        <span aria-hidden="true">✕</span>
+        Cancelar
+      </button>
+    </div>
+  </div>
+
+  <!-- Loading State -->
+  <div *ngIf="loading$ | async" class="category-list__loading" role="status" aria-live="polite">
+    <div class="loading-spinner">
+      <div class="loading-spinner__circle"></div>
+    </div>
+    <p class="loading-spinner__text">Carregando categorias...</p>
+  </div>
+
+  <!-- Error State -->
+  <div *ngIf="error$ | async as error" class="category-list__error" role="alert">
+    <div class="error-message">
+      <span class="error-message__icon" aria-hidden="true">⚠️</span>
+      <div class="error-message__content">
+        <h3 class="error-message__title">Erro ao carregar categorias</h3>
+        <p class="error-message__text">{{ error }}</p>
+        <button
+          class="btn btn--primary error-message__retry"
+          (click)="retryLoadCategories()"
+          type="button">
+          Tentar Novamente
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Categories Content -->
+  <div *ngIf="!(loading$ | async) && !(error$ | async)" class="category-list__content">
+    
+    <!-- Categories List/Grid -->
+    <div *ngIf="categories$ | async as categories" class="category-list__items">
+      
+      <!-- Empty State -->
+      <div *ngIf="categories.length === 0" class="category-list__empty" role="status">
+        <div class="empty-state">
+          <div class="empty-state__icon" aria-hidden="true">📦</div>
+          <h3 class="empty-state__title">Nenhuma categoria encontrada</h3>
+          <p class="empty-state__description">
+            <span *ngIf="searchControl.value || statusFilterControl.value !== null">
+              Não encontramos categorias com os filtros aplicados.
+            </span>
+            <span *ngIf="!searchControl.value && statusFilterControl.value === null">
+              Você ainda não criou nenhuma categoria.
+            </span>
+          </p>
+          <div class="empty-state__actions">
+            <button
+              *ngIf="!searchControl.value && statusFilterControl.value === null"
+              class="btn btn--primary"
+              (click)="onCreateCategory()"
+              type="button">
+              <span aria-hidden="true">➕</span>
+              Criar Primeira Categoria
+            </button>
+            <button
+              *ngIf="searchControl.value || statusFilterControl.value !== null"
+              class="btn btn--secondary"
+              (click)="clearAllFilters()"
+              type="button">
+              <span aria-hidden="true">🗑️</span>
+              Limpar Filtros
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Categories Grid/List -->
+      <div 
+        *ngIf="categories.length > 0"
+        class="category-list__grid"
+        [class.category-list__grid--list]="viewMode() === 'list'"
+        [class.category-list__grid--grid]="viewMode() === 'grid'"
+        role="grid"
+        [attr.aria-label]="'Lista de ' + categories.length + ' categoria(s)'"
+        [attr.aria-rowcount]="categories.length">
+
+        <!-- Select All Header (only in list mode) -->
+        <div 
+          *ngIf="viewMode() === 'list'"
+          class="category-list__select-all"
+          role="gridcell">
+          <label class="checkbox-label">
+            <input
+              type="checkbox"
+              class="checkbox-input"
+              [checked]="areAllCategoriesSelected(categories)"
+              [indeterminate]="selectedCategories().size > 0 && !areAllCategoriesSelected(categories)"
+              (change)="toggleSelectAll(categories)"
+              [attr.aria-label]="'Selecionar todas as categorias visíveis'">
+            <span class="checkbox-custom" aria-hidden="true"></span>
+            <span class="sr-only">Selecionar todas</span>
+          </label>
+        </div>
+
+        <!-- Category Items -->
+        <div
+          *ngFor="let category of categories; trackBy: trackByCategory; let i = index"
+          class="category-list__item"
+          [class.category-list__item--selected]="isCategorySelected(category.id)"
+          role="gridcell"
+          [attr.aria-rowindex]="i + 1">
+
+          <!-- Selection Checkbox (list mode) -->
+          <div 
+            *ngIf="viewMode() === 'list'"
+            class="category-list__item-select">
+            <label class="checkbox-label">
+              <input
+                type="checkbox"
+                class="checkbox-input"
+                [checked]="isCategorySelected(category.id)"
+                (change)="toggleCategorySelection(category.id)"
+                [attr.aria-label]="'Selecionar categoria ' + category.nome">
+              <span class="checkbox-custom" aria-hidden="true"></span>
+              <span class="sr-only">Selecionar</span>
+            </label>
+          </div>
+
+          <!-- Category Card -->
+          <app-category-card
+            [category]="category"
+            [isLoading]="false"
+            [tabIndex]="0"
+            [showActions]="true"
+            (edit)="onEditCategory($event)"
+            (delete)="onDeleteCategory($event)"
+            (viewDetails)="onViewCategoryDetails($event)">
+          </app-category-card>
+
+          <!-- Selection Checkbox (grid mode) -->
+          <div 
+            *ngIf="viewMode() === 'grid'"
+            class="category-list__item-select category-list__item-select--overlay">
+            <label class="checkbox-label">
+              <input
+                type="checkbox"
+                class="checkbox-input"
+                [checked]="isCategorySelected(category.id)"
+                (change)="toggleCategorySelection(category.id)"
+                [attr.aria-label]="'Selecionar categoria ' + category.nome">
+              <span class="checkbox-custom" aria-hidden="true"></span>
+              <span class="sr-only">Selecionar</span>
+            </label>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Pagination -->
+    <div 
+      *ngIf="(categories$ | async)?.length && totalPages() > 1"
+      class="category-list__pagination"
+      role="navigation"
+      [attr.aria-label]="'Navegação de páginas'">
+      
+      <div class="pagination">
+        <!-- Pagination Info -->
+        <div class="pagination__info">
+          <span class="pagination__info-text">{{ getPaginationInfo() }}</span>
+        </div>
+
+        <!-- Page Size Selector -->
+        <div class="pagination__page-size">
+          <label for="page-size-select" class="pagination__page-size-label">
+            Itens por página:
+          </label>
+          <select
+            id="page-size-select"
+            class="pagination__page-size-select"
+            [value]="pageSize()"
+            (change)="changePageSize(+$any($event.target).value)">
+            <option value="10">10</option>
+            <option value="20">20</option>
+            <option value="50">50</option>
+            <option value="100">100</option>
+          </select>
+        </div>
+
+        <!-- Pagination Controls -->
+        <div class="pagination__controls">
+          <!-- First Page -->
+          <button
+            class="pagination__btn pagination__btn--first"
+            (click)="goToFirstPage()"
+            [disabled]="currentPage() === 1"
+            [attr.aria-label]="'Ir para primeira página'"
+            type="button">
+            <span aria-hidden="true">⏮️</span>
+            <span class="sr-only">Primeira</span>
+          </button>
+
+          <!-- Previous Page -->
+          <button
+            class="pagination__btn pagination__btn--prev"
+            (click)="goToPreviousPage()"
+            [disabled]="currentPage() === 1"
+            [attr.aria-label]="'Ir para página anterior'"
+            type="button">
+            <span aria-hidden="true">◀️</span>
+            <span class="sr-only">Anterior</span>
+          </button>
+
+          <!-- Page Numbers -->
+          <div class="pagination__pages">
+            <button
+              *ngFor="let page of getPageNumbers(); trackBy: trackByPageNumber"
+              class="pagination__btn pagination__btn--page"
+              [class.pagination__btn--current]="page === currentPage()"
+              [class.pagination__btn--dots]="page === -1"
+              [disabled]="page === -1 || page === currentPage()"
+              (click)="page !== -1 && goToPage(page)"
+              [attr.aria-label]="page === -1 ? null : 'Ir para página ' + page"
+              [attr.aria-current]="page === currentPage() ? 'page' : null"
+              type="button">
+              {{ page === -1 ? '...' : page }}
+            </button>
+          </div>
+
+          <!-- Next Page -->
+          <button
+            class="pagination__btn pagination__btn--next"
+            (click)="goToNextPage()"
+            [disabled]="currentPage() === totalPages()"
+            [attr.aria-label]="'Ir para próxima página'"
+            type="button">
+            <span aria-hidden="true">▶️</span>
+            <span class="sr-only">Próxima</span>
+          </button>
+
+          <!-- Last Page -->
+          <button
+            class="pagination__btn pagination__btn--last"
+            (click)="goToLastPage()"
+            [disabled]="currentPage() === totalPages()"
+            [attr.aria-label]="'Ir para última página'"
+            type="button">
+            <span aria-hidden="true">⏭️</span>
+            <span class="sr-only">Última</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Keyboard Shortcuts Help -->
+  <div class="category-list__shortcuts sr-only" role="region" aria-label="Atalhos de teclado">
+    <h3>Atalhos de teclado disponíveis:</h3>
+    <ul>
+      <li>Ctrl+F: Focar no campo de busca</li>
+      <li>Ctrl+R: Atualizar lista</li>
+      <li>Ctrl+N: Nova categoria</li>
+      <li>Ctrl+V: Alternar modo de visualização</li>
+      <li>Ctrl+A: Selecionar todas</li>
+      <li>Escape: Cancelar seleção</li>
+    </ul>
+  </div>
+</div>
