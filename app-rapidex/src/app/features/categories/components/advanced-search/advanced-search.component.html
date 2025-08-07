@@ -1,0 +1,364 @@
+<div class="advanced-search" role="search" aria-label="Busca avançada de categorias">
+  <!-- Main Search Input -->
+  <div class="search-container">
+    <div class="search-input-wrapper">
+      <form [formGroup]="searchForm" class="search-form" (ngSubmit)="performSearch()">
+        <div class="search-input-group">
+          <label for="advanced-search-input" class="sr-only">
+            {{ placeholder }}
+          </label>
+          <input
+            id="advanced-search-input"
+            type="text"
+            class="search-input"
+            [placeholder]="placeholder"
+            formControlName="query"
+            (focus)="onSearchFocus()"
+            (blur)="onSearchBlur()"
+            (input)="onSearchInput($event)"
+            (keydown)="onSearchKeydown($event)"
+            autocomplete="off"
+            spellcheck="false"
+            [attr.aria-expanded]="showSuggestions() || showHistory()"
+            [attr.aria-owns]="showSuggestions() ? 'search-suggestions' : showHistory() ? 'search-history' : null"
+            aria-describedby="search-help">
+          
+          <!-- Search Icon -->
+          <span class="search-icon" aria-hidden="true">🔍</span>
+          
+          <!-- Clear Button -->
+          <button
+            *ngIf="searchForm.get('query')?.value"
+            type="button"
+            class="search-clear-btn"
+            (click)="clearSearch()"
+            [attr.aria-label]="'Limpar busca'"
+            tabindex="0">
+            <span aria-hidden="true">✕</span>
+          </button>
+        </div>
+        
+        <!-- Search Help Text -->
+        <div id="search-help" class="sr-only">
+          Digite para buscar categorias por nome ou descrição. Use Ctrl+K para focar na busca.
+        </div>
+      </form>
+
+      <!-- Search Suggestions -->
+      <div
+        *ngIf="showSuggestions() && (searchSuggestions$ | async) as suggestions"
+        id="search-suggestions"
+        class="search-dropdown search-suggestions"
+        role="listbox"
+        [attr.aria-label]="'Sugestões de busca'">
+        
+        <div class="search-dropdown__header">
+          <span class="search-dropdown__title">Sugestões</span>
+        </div>
+        
+        <button
+          *ngFor="let suggestion of suggestions; trackBy: trackBySuggestion"
+          type="button"
+          class="search-suggestion"
+          role="option"
+          (click)="selectSuggestion(suggestion)"
+          [attr.aria-label]="getSuggestionLabel(suggestion.type) + ': ' + suggestion.text">
+          
+          <span class="search-suggestion__icon" aria-hidden="true">
+            {{ getSuggestionIcon(suggestion.type) }}
+          </span>
+          
+          <span class="search-suggestion__text" [innerHTML]="highlightText(suggestion.text)"></span>
+          
+          <span *ngIf="suggestion.count" class="search-suggestion__count" aria-hidden="true">
+            {{ suggestion.count }}
+          </span>
+          
+          <span class="search-suggestion__type sr-only">
+            {{ getSuggestionLabel(suggestion.type) }}
+          </span>
+        </button>
+        
+        <div *ngIf="suggestions.length === 0" class="search-dropdown__empty">
+          Nenhuma sugestão encontrada
+        </div>
+      </div>
+
+      <!-- Search History -->
+      <div
+        *ngIf="showHistory() && (searchHistory$ | async) as history"
+        id="search-history"
+        class="search-dropdown search-history"
+        role="listbox"
+        [attr.aria-label]="'Histórico de buscas'">
+        
+        <div class="search-dropdown__header">
+          <span class="search-dropdown__title">Buscas recentes</span>
+          <button
+            *ngIf="history.length > 0"
+            type="button"
+            class="search-dropdown__clear"
+            (click)="clearSearchHistory()"
+            [attr.aria-label]="'Limpar histórico de buscas'">
+            <span aria-hidden="true">🗑️</span>
+          </button>
+        </div>
+        
+        <button
+          *ngFor="let item of history; trackBy: trackByHistory"
+          type="button"
+          class="search-history-item"
+          role="option"
+          (click)="selectHistoryItem(item.query)"
+          [attr.aria-label]="'Buscar novamente: ' + item.query">
+          
+          <span class="search-history-item__icon" aria-hidden="true">🕒</span>
+          
+          <div class="search-history-item__content">
+            <span class="search-history-item__query">{{ item.query }}</span>
+            <span class="search-history-item__meta">
+              {{ item.resultsCount }} resultado(s) • {{ formatDate(item.timestamp) }} {{ formatTime(item.timestamp) }}
+            </span>
+          </div>
+          
+          <button
+            type="button"
+            class="search-history-item__remove"
+            (click)="removeHistoryItem(item.query, $event)"
+            [attr.aria-label]="'Remover ' + item.query + ' do histórico'"
+            tabindex="0">
+            <span aria-hidden="true">✕</span>
+          </button>
+        </button>
+        
+        <div *ngIf="history.length === 0" class="search-dropdown__empty">
+          Nenhuma busca recente
+        </div>
+      </div>
+    </div>
+
+    <!-- Search Actions -->
+    <div class="search-actions">
+      <!-- Advanced Filters Toggle -->
+      <button
+        *ngIf="showAdvancedFilters"
+        type="button"
+        class="search-action-btn"
+        [class.search-action-btn--active]="showAdvanced() || hasActiveFilters()"
+        (click)="toggleAdvancedFilters()"
+        [attr.aria-label]="'Filtros avançados'"
+        [attr.aria-expanded]="showAdvanced()">
+        <span aria-hidden="true">⚙️</span>
+        <span class="search-action-btn__text">Filtros</span>
+        <span *ngIf="hasActiveFilters()" class="search-action-btn__badge" aria-hidden="true"></span>
+      </button>
+
+      <!-- Export Options -->
+      <div *ngIf="showExportOptions" class="search-export-group">
+        <button
+          type="button"
+          class="search-action-btn"
+          (click)="exportToCSV()"
+          [attr.aria-label]="'Exportar resultados para CSV'">
+          <span aria-hidden="true">📊</span>
+          <span class="search-action-btn__text">CSV</span>
+        </button>
+        
+        <button
+          type="button"
+          class="search-action-btn"
+          (click)="exportToJSON()"
+          [attr.aria-label]="'Exportar resultados para JSON'">
+          <span aria-hidden="true">📄</span>
+          <span class="search-action-btn__text">JSON</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Advanced Filters Panel -->
+  <div
+    *ngIf="showAdvanced()"
+    class="advanced-filters"
+    role="region"
+    aria-label="Filtros avançados"
+    [attr.aria-expanded]="showAdvanced()">
+    
+    <form [formGroup]="advancedFiltersForm" class="advanced-filters__form">
+      <div class="advanced-filters__header">
+        <h3 class="advanced-filters__title">Filtros Avançados</h3>
+        <button
+          type="button"
+          class="advanced-filters__close"
+          (click)="toggleAdvancedFilters()"
+          [attr.aria-label]="'Fechar filtros avançados'">
+          <span aria-hidden="true">✕</span>
+        </button>
+      </div>
+
+      <div class="advanced-filters__content">
+        <!-- Status Filter -->
+        <div class="filter-group">
+          <label for="status-filter" class="filter-label">Status:</label>
+          <select
+            id="status-filter"
+            class="filter-select"
+            formControlName="ativo"
+            [attr.aria-describedby]="'status-filter-help'">
+            <option [ngValue]="null">Todos</option>
+            <option [ngValue]="true">Ativas</option>
+            <option [ngValue]="false">Inativas</option>
+          </select>
+          <div id="status-filter-help" class="filter-help">
+            Filtrar por status ativo ou inativo
+          </div>
+        </div>
+
+        <!-- Date Range Filter -->
+        <div class="filter-group">
+          <fieldset class="filter-fieldset">
+            <legend class="filter-legend">Período:</legend>
+            
+            <div class="filter-row">
+              <label for="date-field-select" class="filter-label filter-label--inline">Campo:</label>
+              <select
+                id="date-field-select"
+                class="filter-select filter-select--small"
+                formControlName="dateRangeField">
+                <option value="dataCriacao">Data de Criação</option>
+                <option value="dataAtualizacao">Última Atualização</option>
+              </select>
+            </div>
+            
+            <div class="filter-row">
+              <div class="filter-date-group">
+                <label for="date-start" class="filter-label filter-label--inline">De:</label>
+                <input
+                  id="date-start"
+                  type="date"
+                  class="filter-input filter-input--date"
+                  formControlName="dateRangeStart"
+                  [attr.aria-describedby]="'date-range-help'">
+              </div>
+              
+              <div class="filter-date-group">
+                <label for="date-end" class="filter-label filter-label--inline">Até:</label>
+                <input
+                  id="date-end"
+                  type="date"
+                  class="filter-input filter-input--date"
+                  formControlName="dateRangeEnd"
+                  [attr.aria-describedby]="'date-range-help'">
+              </div>
+            </div>
+            
+            <div id="date-range-help" class="filter-help">
+              Filtrar por período de criação ou atualização
+            </div>
+          </fieldset>
+        </div>
+
+        <!-- Product Count Filter -->
+        <div class="filter-group">
+          <fieldset class="filter-fieldset">
+            <legend class="filter-legend">Quantidade de Produtos:</legend>
+            
+            <div class="filter-row">
+              <div class="filter-number-group">
+                <label for="min-products" class="filter-label filter-label--inline">Mínimo:</label>
+                <input
+                  id="min-products"
+                  type="number"
+                  class="filter-input filter-input--number"
+                  formControlName="minProductCount"
+                  min="0"
+                  [attr.aria-describedby]="'product-count-help'">
+              </div>
+              
+              <div class="filter-number-group">
+                <label for="max-products" class="filter-label filter-label--inline">Máximo:</label>
+                <input
+                  id="max-products"
+                  type="number"
+                  class="filter-input filter-input--number"
+                  formControlName="maxProductCount"
+                  min="0"
+                  [attr.aria-describedby]="'product-count-help'">
+              </div>
+            </div>
+            
+            <div id="product-count-help" class="filter-help">
+              Filtrar por quantidade de produtos na categoria
+            </div>
+          </fieldset>
+        </div>
+
+        <!-- Sort Options -->
+        <div class="filter-group">
+          <fieldset class="filter-fieldset">
+            <legend class="filter-legend">Ordenação:</legend>
+            
+            <div class="filter-row">
+              <label for="sort-by" class="filter-label filter-label--inline">Ordenar por:</label>
+              <select
+                id="sort-by"
+                class="filter-select"
+                formControlName="sortBy">
+                <option value="nome">Nome</option>
+                <option value="dataCriacao">Data de Criação</option>
+                <option value="dataAtualizacao">Última Atualização</option>
+                <option value="produtosCount">Quantidade de Produtos</option>
+              </select>
+              
+              <button
+                type="button"
+                class="sort-order-btn"
+                (click)="advancedFiltersForm.patchValue({ 
+                  sortOrder: advancedFiltersForm.get('sortOrder')?.value === 'asc' ? 'desc' : 'asc' 
+                })"
+                [attr.aria-label]="'Alterar ordem para ' + (advancedFiltersForm.get('sortOrder')?.value === 'asc' ? 'decrescente' : 'crescente')"
+                [attr.aria-pressed]="advancedFiltersForm.get('sortOrder')?.value === 'desc'">
+                <span aria-hidden="true">
+                  {{ advancedFiltersForm.get('sortOrder')?.value === 'asc' ? '↑' : '↓' }}
+                </span>
+                <span class="sr-only">
+                  {{ advancedFiltersForm.get('sortOrder')?.value === 'asc' ? 'Crescente' : 'Decrescente' }}
+                </span>
+              </button>
+            </div>
+          </fieldset>
+        </div>
+      </div>
+
+      <!-- Filter Actions -->
+      <div class="advanced-filters__actions">
+        <button
+          type="button"
+          class="btn btn--secondary"
+          (click)="clearAllFilters()"
+          [disabled]="!hasActiveFilters()">
+          <span aria-hidden="true">🗑️</span>
+          Limpar Filtros
+        </button>
+        
+        <button
+          type="button"
+          class="btn btn--ghost"
+          (click)="toggleAdvancedFilters()">
+          Fechar
+        </button>
+      </div>
+    </form>
+  </div>
+
+  <!-- Keyboard Shortcuts Help -->
+  <div class="search-shortcuts sr-only" role="region" aria-label="Atalhos de teclado">
+    <h4>Atalhos de teclado disponíveis:</h4>
+    <ul>
+      <li>Ctrl+K: Focar na busca</li>
+      <li>Seta para baixo: Navegar pelas sugestões</li>
+      <li>Enter: Executar busca</li>
+      <li>Escape: Fechar sugestões</li>
+    </ul>
+  </div>
+</div>

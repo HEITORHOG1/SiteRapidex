@@ -43,10 +43,18 @@ import {
 import { Category } from '../../models/category.models';
 import { CreateCategoryRequest, UpdateCategoryRequest } from '../../models/category-dto.models';
 import { CategoryHttpService } from '../../services/category-http.service';
+import { CategoryValidationService, ValidationResult } from '../../services/category-validation.service';
+import { CategoryValidationMessagesService } from '../../services/category-validation-messages.service';
 import { EstabelecimentoService } from '../../../../core/services/estabelecimento.service';
 import { NotificationService } from '../../../../shared/services/notification.service';
 
 import { LoadingSpinnerComponent } from '../../../../shared/ui/loading/loading';
+import { ValidationFeedbackComponent } from '../validation-feedback/validation-feedback.component';
+
+import { 
+  createCategoryNameValidators, 
+  createCategoryDescriptionValidators 
+} from '../../validators/category-form.validators';
 
 /**
  * Form component for creating and editing categories
@@ -58,8 +66,8 @@ import { LoadingSpinnerComponent } from '../../../../shared/ui/loading/loading';
   imports: [
     CommonModule,
     ReactiveFormsModule,
-
-    LoadingSpinnerComponent
+    LoadingSpinnerComponent,
+    ValidationFeedbackComponent
   ],
   templateUrl: './category-form.component.html',
   styleUrl: './category-form.component.scss',
@@ -68,6 +76,8 @@ import { LoadingSpinnerComponent } from '../../../../shared/ui/loading/loading';
 export class CategoryFormComponent implements OnInit, OnDestroy, AfterViewInit {
   private fb = inject(FormBuilder);
   private categoryService = inject(CategoryHttpService);
+  private validationService = inject(CategoryValidationService);
+  private messagesService = inject(CategoryValidationMessagesService);
   private estabelecimentoService = inject(EstabelecimentoService);
   private notificationService = inject(NotificationService);
   private destroyRef = inject(DestroyRef);
@@ -138,25 +148,22 @@ export class CategoryFormComponent implements OnInit, OnDestroy, AfterViewInit {
    * Builds the reactive form with validation
    */
   private buildForm(): void {
+    const excludeId = this.isEditMode() && this.category ? this.category.id : undefined;
+    
+    // Get validators from our validation service
+    const nomeValidators = createCategoryNameValidators(excludeId);
+    const descricaoValidators = createCategoryDescriptionValidators();
+
     this.categoryForm = this.fb.group({
       nome: [
         '', 
-        [
-          Validators.required,
-          Validators.minLength(2),
-          Validators.maxLength(100),
-          this.noScriptValidator,
-          this.noHtmlValidator
-        ],
-        [this.uniqueNameValidator()]
+        nomeValidators.sync,
+        nomeValidators.async
       ],
       descricao: [
         '', 
-        [
-          Validators.maxLength(500),
-          this.noScriptValidator,
-          this.noHtmlValidator
-        ]
+        descricaoValidators.sync,
+        descricaoValidators.async
       ],
       ativo: [true]
     });
@@ -238,89 +245,39 @@ export class CategoryFormComponent implements OnInit, OnDestroy, AfterViewInit {
   }
 
   /**
-   * Custom validator to prevent script injection
+   * Validates form data before submission
    */
-  private noScriptValidator(control: AbstractControl): ValidationErrors | null {
-    if (!control.value) return null;
+  private validateFormData(): ValidationResult {
+    const formValue = this.categoryForm.value;
     
-    const scriptPattern = /<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi;
-    const jsPattern = /javascript:/gi;
-    
-    if (scriptPattern.test(control.value) || jsPattern.test(control.value)) {
-      return { script: { message: 'Scripts não são permitidos' } };
+    if (this.isEditMode()) {
+      const updateRequest: UpdateCategoryRequest = {
+        nome: formValue.nome,
+        descricao: formValue.descricao || '',
+        ativo: formValue.ativo
+      };
+      
+      const excludeId = this.category ? this.category.id : undefined;
+      return this.validationService.validateUpdateRequest(updateRequest, excludeId);
+    } else {
+      const createRequest: CreateCategoryRequest = {
+        nome: formValue.nome,
+        descricao: formValue.descricao || ''
+      };
+      
+      return this.validationService.validateCreateRequest(createRequest);
     }
-    
-    return null;
   }
 
   /**
-   * Custom validator to prevent HTML injection
-   */
-  private noHtmlValidator(control: AbstractControl): ValidationErrors | null {
-    if (!control.value) return null;
-    
-    const htmlPattern = /<[^>]*>/g;
-    if (htmlPattern.test(control.value)) {
-      return { html: { message: 'Tags HTML não são permitidas' } };
-    }
-    
-    return null;
-  }
-
-  /**
-   * Async validator for unique category name
-   */
-  private uniqueNameValidator(): AsyncValidatorFn {
-    return (control: AbstractControl): Observable<ValidationErrors | null> => {
-      if (!control.value || control.value.length < 2) {
-        return of(null);
-      }
-
-      return this.currentEstablishment$.pipe(
-        take(1),
-        switchMap(establishment => {
-          if (!establishment) {
-            return of({ establishment: { message: 'Estabelecimento não selecionado' } });
-          }
-
-          const excludeId = this.isEditMode() && this.category ? this.category.id : undefined;
-          
-          return this.categoryService.validateCategoryName(
-            establishment.id, 
-            control.value.trim(), 
-            excludeId
-          ).pipe(
-            map(isValid => isValid ? null : { unique: { message: 'Nome já existe neste estabelecimento' } }),
-            catchError(() => of(null)) // Ignore validation errors, let form submit handle them
-          );
-        })
-      );
-    };
-  }
-
-  /**
-   * Sanitizes form input to prevent XSS
+   * Sanitizes form data using validation service
    */
   private sanitizeFormData(data: any): any {
-    return {
-      ...data,
-      nome: this.sanitizeString(data.nome),
-      descricao: this.sanitizeString(data.descricao || '')
-    };
-  }
-
-  /**
-   * Sanitizes string input
-   */
-  private sanitizeString(input: string): string {
-    if (!input) return '';
-    
-    return input
-      .trim()
-      .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
-      .replace(/[<>]/g, '')
-      .replace(/javascript:/gi, '')
-      .replace(/on\w+\s*=/gi, '');
+    if (this.isEditMode()) {
+      return this.validationService.sanitizeUpdateRequest(data as UpdateCategoryRequest);
+    } else {
+      return this.validationService.sanitizeCreateRequest(data as CreateCategoryRequest);
+    }
   }
 
   /**
@@ -373,14 +330,23 @@ export class CategoryFormComponent implements OnInit, OnDestroy, AfterViewInit {
    * Handles form submission
    */
   onSubmit(): void {
-    if (!this.categoryForm.valid || this.submitting()) {
+    // Perform comprehensive validation
+    const validationResult = this.validateFormData();
+    
+    if (!validationResult.valid) {
+      this.handleValidationErrors(validationResult.errors);
       this.markFormGroupTouched();
+      return;
+    }
+
+    if (this.submitting()) {
       return;
     }
 
     this.submitting.set(true);
     
-    const formData = this.sanitizeFormData(this.categoryForm.value);
+    // Use sanitized data from validation result
+    const sanitizedData = validationResult.sanitizedData!;
     
     this.currentEstablishment$
       .pipe(
@@ -391,11 +357,7 @@ export class CategoryFormComponent implements OnInit, OnDestroy, AfterViewInit {
           }
 
           if (this.isEditMode() && this.category) {
-            const updateRequest: UpdateCategoryRequest = {
-              nome: formData.nome,
-              descricao: formData.descricao,
-              ativo: formData.ativo
-            };
+            const updateRequest = sanitizedData as UpdateCategoryRequest;
             
             return this.categoryService.updateCategory(
               establishment.id,
@@ -404,19 +366,16 @@ export class CategoryFormComponent implements OnInit, OnDestroy, AfterViewInit {
             ).pipe(
               tap(() => {
                 this.notificationService.success('Categoria atualizada com sucesso!');
-                this.announceToScreenReader(`Categoria ${formData.nome} atualizada com sucesso`);
+                this.announceToScreenReader(`Categoria ${updateRequest.nome} atualizada com sucesso`);
               })
             );
           } else {
-            const createRequest: CreateCategoryRequest = {
-              nome: formData.nome,
-              descricao: formData.descricao
-            };
+            const createRequest = sanitizedData as CreateCategoryRequest;
             
             return this.categoryService.createCategory(establishment.id, createRequest).pipe(
               tap(() => {
                 this.notificationService.success('Categoria criada com sucesso!');
-                this.announceToScreenReader(`Categoria ${formData.nome} criada com sucesso`);
+                this.announceToScreenReader(`Categoria ${createRequest.nome} criada com sucesso`);
               })
             );
           }
@@ -426,7 +385,7 @@ export class CategoryFormComponent implements OnInit, OnDestroy, AfterViewInit {
       )
       .subscribe({
         next: (result) => {
-          this.formSubmit.emit(this.isEditMode() ? formData as UpdateCategoryRequest : formData as CreateCategoryRequest);
+          this.formSubmit.emit(sanitizedData);
           
           // Reset form if creating
           if (!this.isEditMode()) {
@@ -436,15 +395,7 @@ export class CategoryFormComponent implements OnInit, OnDestroy, AfterViewInit {
         },
         error: (error) => {
           console.error('Form submission error:', error);
-          this.notificationService.error(
-            error.message || 'Erro ao salvar categoria. Tente novamente.'
-          );
-          this.announceToScreenReader('Erro ao salvar categoria');
-          
-          // Handle specific validation errors
-          if (error.code === 'VALIDATION_ERROR' && error.details?.field) {
-            this.setFieldError(error.details.field, error.message);
-          }
+          this.handleSubmissionError(error);
         }
       });
   }
@@ -499,35 +450,82 @@ export class CategoryFormComponent implements OnInit, OnDestroy, AfterViewInit {
   }
 
   /**
-   * Gets error message for a form field
+   * Handles validation errors from comprehensive validation
+   */
+  private handleValidationErrors(errors: any[]): void {
+    // Group errors by field and set them on form controls
+    const errorsByField = new Map<string, any[]>();
+    
+    for (const error of errors) {
+      const fieldName = error.field || 'general';
+      if (!errorsByField.has(fieldName)) {
+        errorsByField.set(fieldName, []);
+      }
+      errorsByField.get(fieldName)!.push(error);
+    }
+
+    // Set errors on form controls
+    for (const [fieldName, fieldErrors] of errorsByField) {
+      const control = this.categoryForm.get(fieldName);
+      if (control) {
+        const errorObj: any = {};
+        for (const error of fieldErrors) {
+          errorObj[error.code.toLowerCase()] = error;
+        }
+        control.setErrors(errorObj);
+        control.markAsTouched();
+      }
+    }
+
+    // Show summary message for accessibility
+    const summary = this.messagesService.getErrorSummaryMessage(errors);
+    this.announceToScreenReader(summary);
+    
+    // Show notification for security errors
+    if (this.messagesService.hasSecurityErrors(errors)) {
+      this.notificationService.error('Dados rejeitados por motivos de segurança. Verifique os campos destacados.');
+    }
+  }
+
+  /**
+   * Handles submission errors
+   */
+  private handleSubmissionError(error: any): void {
+    let errorMessage = 'Erro ao salvar categoria. Tente novamente.';
+    
+    if (error.message) {
+      errorMessage = error.message;
+    }
+    
+    this.notificationService.error(errorMessage);
+    this.announceToScreenReader('Erro ao salvar categoria');
+    
+    // Handle specific validation errors from server
+    if (error.code === 'VALIDATION_ERROR' && error.details?.field) {
+      this.setFieldError(error.details.field, error.message);
+    }
+  }
+
+  /**
+   * Gets error message for a form field using validation service
    */
   getFieldError(fieldName: string): string | null {
     const field = this.categoryForm.get(fieldName);
     if (!field || !field.errors || !field.touched) return null;
 
-    const errors = field.errors;
-    
-    if (errors['required']) return `${this.getFieldLabel(fieldName)} é obrigatório`;
-    if (errors['minlength']) return `${this.getFieldLabel(fieldName)} deve ter pelo menos ${errors['minlength'].requiredLength} caracteres`;
-    if (errors['maxlength']) return `${this.getFieldLabel(fieldName)} deve ter no máximo ${errors['maxlength'].requiredLength} caracteres`;
-    if (errors['unique']) return errors['unique'].message;
-    if (errors['script']) return errors['script'].message;
-    if (errors['html']) return errors['html'].message;
-    if (errors['establishment']) return errors['establishment'].message;
-    
-    return 'Campo inválido';
-  }
+    // Convert form errors to our validation error format
+    const errors: any[] = [];
+    for (const [errorKey, errorValue] of Object.entries(field.errors)) {
+      if (errorValue && typeof errorValue === 'object' && 'field' in errorValue) {
+        errors.push(errorValue);
+      }
+    }
 
-  /**
-   * Gets the display label for a field
-   */
-  private getFieldLabel(fieldName: string): string {
-    const labels: Record<string, string> = {
-      nome: 'Nome',
-      descricao: 'Descrição',
-      ativo: 'Status'
-    };
-    return labels[fieldName] || fieldName;
+    if (errors.length > 0) {
+      return this.messagesService.getFirstFieldErrorMessage(errors, fieldName);
+    }
+
+    return null;
   }
 
   /**

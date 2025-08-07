@@ -5,8 +5,10 @@ import { RouterModule } from '@angular/router';
 import { Subject, takeUntil, debounceTime, distinctUntilChanged, combineLatest, startWith } from 'rxjs';
 
 import { CategoryStateService } from '../../services/category-state.service';
+import { CategorySearchService, AdvancedFilters } from '../../services/category-search.service';
 import { EstabelecimentoService } from '../../../../core/services/estabelecimento.service';
 import { CategoryCardComponent } from '../category-card/category-card.component';
+import { AdvancedSearchComponent } from '../advanced-search/advanced-search.component';
 import { Category, CategoryFilters, PaginationState } from '../../models/category.models';
 
 export type ViewMode = 'grid' | 'list';
@@ -20,7 +22,8 @@ export type SortOption = 'nome' | 'dataCriacao' | 'dataAtualizacao';
     FormsModule,
     ReactiveFormsModule,
     RouterModule,
-    CategoryCardComponent
+    CategoryCardComponent,
+    AdvancedSearchComponent
   ],
   templateUrl: './category-list.component.html',
   styleUrls: ['./category-list.component.scss'],
@@ -28,6 +31,7 @@ export type SortOption = 'nome' | 'dataCriacao' | 'dataAtualizacao';
 })
 export class CategoryListComponent implements OnInit, OnDestroy {
   private categoryState = inject(CategoryStateService);
+  private categorySearch = inject(CategorySearchService);
   private estabelecimentoService = inject(EstabelecimentoService);
   private destroy$ = new Subject<void>();
 
@@ -53,7 +57,7 @@ export class CategoryListComponent implements OnInit, OnDestroy {
   isSelectAllMode = signal(false);
 
   // Reactive state from services
-  categories$ = this.categoryState.filteredCategories$;
+  categories$ = this.categorySearch.filteredCategories$;
   loading$ = this.categoryState.loading$;
   error$ = this.categoryState.error$;
   pagination$ = this.categoryState.pagination$;
@@ -176,8 +180,37 @@ export class CategoryListComponent implements OnInit, OnDestroy {
     this.clearSelection();
   }
 
+  onAdvancedSearch(query: string): void {
+    this.categorySearch.updateSearchQuery(query);
+    this.clearSelection();
+  }
+
+  onAdvancedFiltersChange(filters: AdvancedFilters): void {
+    // Update legacy form controls to keep them in sync
+    this.searchControl.setValue(filters.search, { emitEvent: false });
+    this.statusFilterControl.setValue(filters.ativo, { emitEvent: false });
+    this.sortByControl.setValue(filters.sortBy as SortOption, { emitEvent: false });
+    this.sortOrderControl.setValue(filters.sortOrder, { emitEvent: false });
+    
+    this.clearSelection();
+  }
+
+  onExportCategories(event: { format: 'csv' | 'json'; categories: Category[] }): void {
+    const timestamp = new Date().toISOString().split('T')[0];
+    const filename = `categorias-${timestamp}`;
+    
+    if (event.format === 'csv') {
+      this.categorySearch.exportToCSV(event.categories, filename);
+    } else {
+      this.categorySearch.exportToJSON(event.categories, filename);
+    }
+    
+    this.announceToScreenReader(`Exportação ${event.format.toUpperCase()} iniciada com ${event.categories.length} categoria(s)`);
+  }
+
   clearSearch(): void {
     this.searchControl.setValue('');
+    this.categorySearch.clearSearch();
     this.focusSearchInput();
   }
 
@@ -186,6 +219,7 @@ export class CategoryListComponent implements OnInit, OnDestroy {
     this.statusFilterControl.setValue(null);
     this.sortByControl.setValue('nome');
     this.sortOrderControl.setValue('asc');
+    this.categorySearch.clearSearch();
     this.announceToScreenReader('Todos os filtros foram limpos');
   }
 

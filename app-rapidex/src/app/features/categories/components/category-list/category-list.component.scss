@@ -48,6 +48,11 @@
   color: $gray-600;
 }
 
+// Search Section
+.category-list__search-section {
+  margin-bottom: $spacing-lg;
+}
+
 .category-list__header-actions {
   display: flex;
   gap: $spacing-sm;

@@ -27,7 +27,7 @@ export interface ProductSummary {
 export interface CategoryFilters {
   search: string;
   ativo: boolean | null;
-  sortBy: 'nome' | 'dataCriacao' | 'dataAtualizacao';
+  sortBy: 'nome' | 'dataCriacao' | 'dataAtualizacao' | 'produtosCount';
   sortOrder: 'asc' | 'desc';
 }
 

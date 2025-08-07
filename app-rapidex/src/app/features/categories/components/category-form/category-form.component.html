@@ -66,13 +66,16 @@
         Nome único para identificar a categoria (2-100 caracteres)
       </div>
       
-      <!-- Error message -->
-      @if (getFieldError('nome'); as error) {
-        <div id="name-error" class="form-error" role="alert" aria-live="polite">
-          <span class="error-icon" aria-hidden="true">⚠️</span>
-          {{ error }}
-        </div>
-      }
+      <!-- Validation feedback -->
+      <app-validation-feedback
+        [control]="nameControl"
+        fieldName="nome"
+        [showSuccess]="true"
+        [showHelp]="true"
+        [showCharacterCount]="true"
+        [maxLength]="100"
+        [realTimeValidation]="true"
+      ></app-validation-feedback>
     </div>
 
     <!-- Descrição Field -->
@@ -107,13 +110,16 @@
         Descrição opcional para ajudar a identificar a categoria
       </div>
       
-      <!-- Error message -->
-      @if (getFieldError('descricao'); as error) {
-        <div id="description-error" class="form-error" role="alert" aria-live="polite">
-          <span class="error-icon" aria-hidden="true">⚠️</span>
-          {{ error }}
-        </div>
-      }
+      <!-- Validation feedback -->
+      <app-validation-feedback
+        [control]="descricaoControl"
+        fieldName="descricao"
+        [showSuccess]="true"
+        [showHelp]="true"
+        [showCharacterCount]="true"
+        [maxLength]="500"
+        [realTimeValidation]="true"
+      ></app-validation-feedback>
     </div>
 
     <!-- Ativo Field (only in edit mode) -->

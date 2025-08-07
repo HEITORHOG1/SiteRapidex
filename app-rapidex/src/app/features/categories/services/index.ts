@@ -10,3 +10,9 @@ export {
   CACHE_CONFIG_PROFILES,
   CATEGORY_CACHE_CONFIG 
 } from './category-cache-config.service';
+export { 
+  CategorySearchService, 
+  type SearchSuggestion, 
+  type SearchHistory, 
+  type AdvancedFilters 
+} from './category-search.service';

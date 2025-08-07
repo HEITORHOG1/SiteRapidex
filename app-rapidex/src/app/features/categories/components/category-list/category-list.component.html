@@ -25,124 +25,55 @@
     </div>
   </div>
 
-  <!-- Filters and Controls Section -->
-  <div class="category-list__controls">
-    <!-- Search and Filters -->
-    <div class="category-list__filters">
-      <!-- Search Input -->
-      <div class="category-list__search">
-        <label for="category-search" class="sr-only">Buscar categorias</label>
-        <div class="search-input">
-          <input
-            #searchInput
-            id="category-search"
-            type="text"
-            class="search-input__field"
-            placeholder="Buscar categorias..."
-            [formControl]="searchControl"
-            [attr.aria-describedby]="'search-help'"
-            autocomplete="off">
-          <button
-            *ngIf="searchControl.value"
-            class="search-input__clear"
-            (click)="clearSearch()"
-            [attr.aria-label]="'Limpar busca'"
-            type="button">
-            <span aria-hidden="true">✕</span>
-          </button>
-          <span aria-hidden="true" class="search-input__icon">🔍</span>
-        </div>
-        <div id="search-help" class="sr-only">
-          Digite para buscar por nome ou descrição da categoria
-        </div>
-      </div>
+  <!-- Advanced Search and Filters Section -->
+  <div class="category-list__search-section">
+    <app-advanced-search
+      placeholder="Buscar categorias por nome ou descrição..."
+      [showAdvancedFilters]="true"
+      [showExportOptions]="true"
+      [categories]="(categories$ | async) || []"
+      (search)="onAdvancedSearch($event)"
+      (filtersChange)="onAdvancedFiltersChange($event)"
+      (export)="onExportCategories($event)">
+    </app-advanced-search>
+  </div>
 
-      <!-- Status Filter -->
-      <div class="category-list__filter">
-        <label for="status-filter" class="filter-label">Status:</label>
-        <select
-          id="status-filter"
-          class="filter-select"
-          [formControl]="statusFilterControl"
-          [attr.aria-describedby]="'status-filter-help'">
-          <option [ngValue]="null">Todos</option>
-          <option [ngValue]="true">Ativas</option>
-          <option [ngValue]="false">Inativas</option>
-        </select>
-        <div id="status-filter-help" class="sr-only">
-          Filtrar categorias por status ativo ou inativo
-        </div>
-      </div>
-
-      <!-- Sort Controls -->
-      <div class="category-list__sort">
-        <label for="sort-by" class="filter-label">Ordenar por:</label>
-        <select
-          id="sort-by"
-          class="filter-select"
-          [formControl]="sortByControl">
-          <option value="nome">Nome</option>
-          <option value="dataCriacao">Data de Criação</option>
-          <option value="dataAtualizacao">Última Atualização</option>
-        </select>
-        
-        <button
-          class="sort-order-btn"
-          (click)="sortOrderControl.setValue(sortOrderControl.value === 'asc' ? 'desc' : 'asc')"
-          [attr.aria-label]="'Alterar ordem de classificação para ' + (sortOrderControl.value === 'asc' ? 'decrescente' : 'crescente')"
-          type="button">
-          <span aria-hidden="true">{{ sortOrderControl.value === 'asc' ? '↑' : '↓' }}</span>
-        </button>
-      </div>
-
-      <!-- Clear Filters -->
+  <!-- View Mode and Actions -->
+  <div class="category-list__view-controls">
+    <!-- View Mode Toggle -->
+    <div class="view-mode-toggle" role="group" [attr.aria-label]="'Modo de visualização'">
       <button
-        class="btn btn--secondary category-list__clear-filters"
-        (click)="clearAllFilters()"
-        [attr.aria-label]="'Limpar todos os filtros'"
+        class="view-mode-toggle__btn"
+        [class.view-mode-toggle__btn--active]="viewMode() === 'grid'"
+        (click)="setViewMode('grid')"
+        [attr.aria-label]="'Visualizar como grade'"
+        [attr.aria-pressed]="viewMode() === 'grid'"
         type="button">
-        <span aria-hidden="true">🗑️</span>
-        Limpar Filtros
+        <span aria-hidden="true">⊞</span>
+        <span class="sr-only">Grade</span>
+      </button>
+      <button
+        class="view-mode-toggle__btn"
+        [class.view-mode-toggle__btn--active]="viewMode() === 'list'"
+        (click)="setViewMode('list')"
+        [attr.aria-label]="'Visualizar como lista'"
+        [attr.aria-pressed]="viewMode() === 'list'"
+        type="button">
+        <span aria-hidden="true">📋</span>
+        <span class="sr-only">Lista</span>
       </button>
     </div>
 
-    <!-- View Mode and Actions -->
-    <div class="category-list__view-controls">
-      <!-- View Mode Toggle -->
-      <div class="view-mode-toggle" role="group" [attr.aria-label]="'Modo de visualização'">
-        <button
-          class="view-mode-toggle__btn"
-          [class.view-mode-toggle__btn--active]="viewMode() === 'grid'"
-          (click)="setViewMode('grid')"
-          [attr.aria-label]="'Visualizar como grade'"
-          [attr.aria-pressed]="viewMode() === 'grid'"
-          type="button">
-          <span aria-hidden="true">⊞</span>
-          <span class="sr-only">Grade</span>
-        </button>
-        <button
-          class="view-mode-toggle__btn"
-          [class.view-mode-toggle__btn--active]="viewMode() === 'list'"
-          (click)="setViewMode('list')"
-          [attr.aria-label]="'Visualizar como lista'"
-          [attr.aria-pressed]="viewMode() === 'list'"
-          type="button">
-          <span aria-hidden="true">📋</span>
-          <span class="sr-only">Lista</span>
-        </button>
-      </div>
-
-      <!-- Refresh Button -->
-      <button
-        class="btn btn--secondary category-list__refresh"
-        (click)="refreshCategories()"
-        [attr.aria-label]="'Atualizar lista de categorias'"
-        [disabled]="loading$ | async"
-        type="button">
-        <span aria-hidden="true">🔄</span>
-        <span class="sr-only">Atualizar</span>
-      </button>
-    </div>
+    <!-- Refresh Button -->
+    <button
+      class="btn btn--secondary category-list__refresh"
+      (click)="refreshCategories()"
+      [attr.aria-label]="'Atualizar lista de categorias'"
+      [disabled]="loading$ | async"
+      type="button">
+      <span aria-hidden="true">🔄</span>
+      <span class="sr-only">Atualizar</span>
+    </button>
   </div>
 
   <!-- Bulk Actions Bar -->
