@@ -1,0 +1,214 @@
+# Category Module Deployment Configuration
+# This file contains configuration for deploying the category management module
+
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: category-module-config
+  namespace: rapidex
+data:
+  # Application Configuration
+  app.name: "rapidex-category-module"
+  app.version: "1.0.0"
+  app.environment: "production"
+  
+  # API Configuration
+  api.base.url: "https://api.rapidex.com"
+  api.categories.endpoint: "/api/categorias"
+  api.timeout: "30000"
+  api.retry.attempts: "3"
+  api.retry.delay: "1000"
+  
+  # Cache Configuration
+  cache.ttl: "300000"  # 5 minutes
+  cache.max.size: "100"
+  cache.strategy: "lru"
+  
+  # Security Configuration
+  security.csrf.enabled: "true"
+  security.xss.protection: "true"
+  security.content.security.policy: "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'"
+  
+  # Performance Configuration
+  performance.lazy.loading: "true"
+  performance.virtual.scroll: "true"
+  performance.bundle.splitting: "true"
+  performance.tree.shaking: "true"
+  
+  # Monitoring Configuration
+  monitoring.enabled: "true"
+  monitoring.metrics.endpoint: "/metrics"
+  monitoring.health.endpoint: "/health"
+  monitoring.log.level: "info"
+  
+  # Feature Flags
+  features.offline.support: "true"
+  features.analytics: "true"
+  features.accessibility: "true"
+  features.import.export: "true"
+
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: category-module-secrets
+  namespace: rapidex
+type: Opaque
+data:
+  # Base64 encoded secrets
+  api.key: "YXBpLWtleS1oZXJl"  # Replace with actual API key
+  jwt.secret: "and0LXNlY3JldC1oZXJl"  # Replace with actual JWT secret
+  encryption.key: "ZW5jcnlwdGlvbi1rZXktaGVyZQ=="  # Replace with actual encryption key
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: category-module-deployment
+  namespace: rapidex
+  labels:
+    app: rapidex-category-module
+    version: v1.0.0
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: rapidex-category-module
+  template:
+    metadata:
+      labels:
+        app: rapidex-category-module
+        version: v1.0.0
+    spec:
+      containers:
+      - name: category-module
+        image: rapidex/category-module:1.0.0
+        ports:
+        - containerPort: 80
+        env:
+        - name: NODE_ENV
+          value: "production"
+        - name: API_BASE_URL
+          valueFrom:
+            configMapKeyRef:
+              name: category-module-config
+              key: api.base.url
+        - name: API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: category-module-secrets
+              key: api.key
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "250m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 80
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /ready
+            port: 80
+          initialDelaySeconds: 5
+          periodSeconds: 5
+        volumeMounts:
+        - name: config-volume
+          mountPath: /app/config
+        - name: logs-volume
+          mountPath: /app/logs
+      volumes:
+      - name: config-volume
+        configMap:
+          name: category-module-config
+      - name: logs-volume
+        emptyDir: {}
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: category-module-service
+  namespace: rapidex
+  labels:
+    app: rapidex-category-module
+spec:
+  selector:
+    app: rapidex-category-module
+  ports:
+  - protocol: TCP
+    port: 80
+    targetPort: 80
+  type: ClusterIP
+
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: category-module-ingress
+  namespace: rapidex
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
+spec:
+  tls:
+  - hosts:
+    - rapidex.com
+    secretName: rapidex-tls
+  rules:
+  - host: rapidex.com
+    http:
+      paths:
+      - path: /categories
+        pathType: Prefix
+        backend:
+          service:
+            name: category-module-service
+            port:
+              number: 80
+
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: category-module-hpa
+  namespace: rapidex
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: category-module-deployment
+  minReplicas: 2
+  maxReplicas: 10
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 70
+  - type: Resource
+    resource:
+      name: memory
+      target:
+        type: Utilization
+        averageUtilization: 80
+
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: category-module-pdb
+  namespace: rapidex
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app: rapidex-category-module

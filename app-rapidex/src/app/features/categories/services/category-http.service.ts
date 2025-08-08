@@ -1,8 +1,10 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
-import { Observable, throwError } from 'rxjs';
-import { catchError, map } from 'rxjs/operators';
+import { Observable, throwError, of } from 'rxjs';
+import { catchError, map, tap } from 'rxjs/operators';
 import { ApiConfigService } from '../../../core/services/api-config.service';
+import { CategoryOfflineStorageService } from './category-offline-storage.service';
+import { CategoryServiceWorkerRegistrationService } from './category-sw-registration.service';
 import { 
   Category, 
   CategoryListParams 
@@ -33,6 +35,8 @@ import { ApiError, ErrorCodes } from '../../../data-access/models/auth.models';
 export class CategoryHttpService {
   private http = inject(HttpClient);
   private apiConfig = inject(ApiConfigService);
+  private offlineStorage = inject(CategoryOfflineStorageService);
+  private swRegistration = inject(CategoryServiceWorkerRegistrationService);
 
 
 
@@ -48,7 +52,28 @@ export class CategoryHttpService {
     const httpParams = this.buildHttpParams(params);
 
     return this.http.get<CategoryListResponse>(url, { params: httpParams }).pipe(
-      catchError(error => this.handleError(error, 'Erro ao carregar categorias'))
+      tap(response => {
+        // Cache categories for offline use
+        this.offlineStorage.cacheCategories(estabelecimentoId, response.categorias);
+        // Also cache in service worker
+        this.swRegistration.cacheCategoryData(estabelecimentoId, response.categorias);
+      }),
+      catchError(error => {
+        // If online request fails and we're offline, try cached data
+        if (!navigator.onLine) {
+          const cachedCategories = this.offlineStorage.getCachedCategories(estabelecimentoId);
+          if (cachedCategories.length > 0) {
+            const response: CategoryListResponse = {
+              categorias: cachedCategories,
+              total: cachedCategories.length,
+              pagina: params?.page || 1,
+              totalPaginas: Math.ceil(cachedCategories.length / (params?.limit || 10))
+            };
+            return of(response);
+          }
+        }
+        return this.handleError(error, 'Erro ao carregar categorias');
+      })
     );
   }
 
@@ -104,7 +129,39 @@ export class CategoryHttpService {
     const sanitizedRequest = this.sanitizeCreateRequest(request);
 
     return this.http.post<Category>(url, sanitizedRequest).pipe(
-      catchError(error => this.handleError(error, 'Erro ao criar categoria'))
+      tap(category => {
+        // Update cache with new category
+        const cachedCategories = this.offlineStorage.getCachedCategories(estabelecimentoId);
+        cachedCategories.push(category);
+        this.offlineStorage.cacheCategories(estabelecimentoId, cachedCategories);
+        this.swRegistration.cacheCategoryData(estabelecimentoId, cachedCategories);
+      }),
+      catchError(error => {
+        // If offline, queue the operation
+        if (!navigator.onLine) {
+          this.offlineStorage.addOfflineOperation({
+            type: 'create',
+            estabelecimentoId,
+            data: sanitizedRequest
+          });
+          // Register for background sync
+          this.swRegistration.registerBackgroundSync('category-sync');
+          
+          // Return a temporary category for optimistic UI
+          const tempCategory: Category = {
+            id: -Date.now(),
+            nome: sanitizedRequest.nome,
+            descricao: sanitizedRequest.descricao,
+            estabelecimentoId,
+            ativo: true,
+            dataCriacao: new Date(),
+            dataAtualizacao: new Date(),
+            produtosCount: 0
+          };
+          return of(tempCategory);
+        }
+        return this.handleError(error, 'Erro ao criar categoria');
+      })
     );
   }
 

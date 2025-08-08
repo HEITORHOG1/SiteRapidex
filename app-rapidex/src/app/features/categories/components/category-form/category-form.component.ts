@@ -12,7 +12,8 @@ import {
   DestroyRef,
   ViewChild,
   ElementRef,
-  AfterViewInit
+  AfterViewInit,
+  HostListener
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { 
@@ -45,11 +46,13 @@ import { CreateCategoryRequest, UpdateCategoryRequest } from '../../models/categ
 import { CategoryHttpService } from '../../services/category-http.service';
 import { CategoryValidationService, ValidationResult } from '../../services/category-validation.service';
 import { CategoryValidationMessagesService } from '../../services/category-validation-messages.service';
+import { CategoryAccessibilityService } from '../../services/category-accessibility.service';
 import { EstabelecimentoService } from '../../../../core/services/estabelecimento.service';
 import { NotificationService } from '../../../../shared/services/notification.service';
 
 import { LoadingSpinnerComponent } from '../../../../shared/ui/loading/loading';
 import { ValidationFeedbackComponent } from '../validation-feedback/validation-feedback.component';
+import { AriaAnnounceDirective, FocusTrapDirective, KeyboardNavigationDirective, AriaDescribedByDirective, HighContrastDirective } from '../../directives/accessibility.directive';
 
 import { 
   createCategoryNameValidators, 
@@ -67,10 +70,15 @@ import {
     CommonModule,
     ReactiveFormsModule,
     LoadingSpinnerComponent,
-    ValidationFeedbackComponent
+    ValidationFeedbackComponent,
+    AriaAnnounceDirective,
+    FocusTrapDirective,
+    KeyboardNavigationDirective,
+    AriaDescribedByDirective,
+    HighContrastDirective
   ],
   templateUrl: './category-form.component.html',
-  styleUrl: './category-form.component.scss',
+  styleUrls: ['./category-form.component.scss', '../../styles/accessibility.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class CategoryFormComponent implements OnInit, OnDestroy, AfterViewInit {
@@ -78,6 +86,7 @@ export class CategoryFormComponent implements OnInit, OnDestroy, AfterViewInit {
   private categoryService = inject(CategoryHttpService);
   private validationService = inject(CategoryValidationService);
   private messagesService = inject(CategoryValidationMessagesService);
+  private categoryAccessibility = inject(CategoryAccessibilityService);
   private estabelecimentoService = inject(EstabelecimentoService);
   private notificationService = inject(NotificationService);
   private destroyRef = inject(DestroyRef);
@@ -118,6 +127,15 @@ export class CategoryFormComponent implements OnInit, OnDestroy, AfterViewInit {
   
   // Current establishment
   private currentEstablishment$ = this.estabelecimentoService.selectedEstabelecimento$;
+  
+  // Accessibility
+  private formId = this.categoryAccessibility.generateAriaId('category-form');
+  private nameFieldId = this.categoryAccessibility.generateAriaId('name-field');
+  private descriptionFieldId = this.categoryAccessibility.generateAriaId('description-field');
+  private statusFieldId = this.categoryAccessibility.generateAriaId('status-field');
+  
+  // Accessibility settings
+  accessibilitySettings$ = this.categoryAccessibility.accessibilitySettings$;
 
   ngOnInit(): void {
     this.buildForm();
@@ -220,15 +238,75 @@ export class CategoryFormComponent implements OnInit, OnDestroy, AfterViewInit {
    * Sets up accessibility features
    */
   private setupAccessibility(): void {
+    // Announce form mode
+    const modeText = this.isEditMode() ? 'edição' : 'criação';
+    this.categoryAccessibility.announceAction(
+      'form_loaded',
+      undefined,
+      `Formulário de ${modeText} de categoria carregado`
+    );
+
     // Add ARIA labels and descriptions
     setTimeout(() => {
       if (this.nameInput) {
-        this.nameInput.nativeElement.setAttribute('aria-describedby', 'name-help name-error');
-        this.nameInput.nativeElement.setAttribute('aria-required', 'true');
+        const nameElement = this.nameInput.nativeElement;
+        nameElement.setAttribute('id', this.nameFieldId);
+        nameElement.setAttribute('aria-describedby', `${this.nameFieldId}-help ${this.nameFieldId}-error`);
+        nameElement.setAttribute('aria-required', 'true');
+        nameElement.setAttribute('aria-invalid', 'false');
+        
+        // Add field description
+        const description = this.categoryAccessibility.getFieldDescription('nome');
+        if (description) {
+          const helpElement = document.createElement('div');
+          helpElement.id = `${this.nameFieldId}-help`;
+          helpElement.className = 'field-help';
+          helpElement.textContent = description;
+          nameElement.parentNode?.insertBefore(helpElement, nameElement.nextSibling);
+        }
       }
       
       if (this.descriptionInput) {
-        this.descriptionInput.nativeElement.setAttribute('aria-describedby', 'description-help description-error');
+        const descElement = this.descriptionInput.nativeElement;
+        descElement.setAttribute('id', this.descriptionFieldId);
+        descElement.setAttribute('aria-describedby', `${this.descriptionFieldId}-help ${this.descriptionFieldId}-error`);
+        descElement.setAttribute('aria-invalid', 'false');
+        
+        // Add field description
+        const description = this.categoryAccessibility.getFieldDescription('descricao');
+        if (description) {
+          const helpElement = document.createElement('div');
+          helpElement.id = `${this.descriptionFieldId}-help`;
+          helpElement.className = 'field-help';
+          helpElement.textContent = description;
+          descElement.parentNode?.insertBefore(helpElement, descElement.nextSibling);
+        }
+      }
+    });
+
+    // Monitor form validation state for accessibility
+    this.categoryForm.statusChanges
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(status => {
+        this.updateAriaInvalid();
+      });
+  }
+
+  /**
+   * Updates aria-invalid attributes based on form validation state
+   */
+  private updateAriaInvalid(): void {
+    setTimeout(() => {
+      if (this.nameInput) {
+        const nameControl = this.categoryForm.get('nome');
+        const isInvalid = nameControl?.invalid && nameControl?.touched;
+        this.nameInput.nativeElement.setAttribute('aria-invalid', isInvalid ? 'true' : 'false');
+      }
+      
+      if (this.descriptionInput) {
+        const descControl = this.categoryForm.get('descricao');
+        const isInvalid = descControl?.invalid && descControl?.touched;
+        this.descriptionInput.nativeElement.setAttribute('aria-invalid', isInvalid ? 'true' : 'false');
       }
     });
   }
@@ -415,12 +493,16 @@ export class CategoryFormComponent implements OnInit, OnDestroy, AfterViewInit {
   /**
    * Handles keyboard navigation
    */
+  @HostListener('keydown', ['$event'])
   onKeyDown(event: KeyboardEvent): void {
     // Ctrl+S or Cmd+S for save
     if ((event.ctrlKey || event.metaKey) && event.key === 's') {
       event.preventDefault();
       if (this.canSubmit()) {
         this.onSubmit();
+        this.categoryAccessibility.announceAction('save_shortcut', undefined, 'Salvando via atalho de teclado');
+      } else {
+        this.categoryAccessibility.announceError('Não é possível salvar no momento', 'Formulário inválido ou em processamento');
       }
     }
     
@@ -428,7 +510,77 @@ export class CategoryFormComponent implements OnInit, OnDestroy, AfterViewInit {
     if (event.key === 'Escape') {
       event.preventDefault();
       this.onCancel();
+      this.categoryAccessibility.announceAction('cancel_shortcut', undefined, 'Cancelando via atalho de teclado');
     }
+
+    // F1 for help
+    if (event.key === 'F1') {
+      event.preventDefault();
+      this.showFormHelp();
+    }
+
+    // Tab navigation enhancement
+    if (event.key === 'Tab') {
+      this.handleTabNavigation(event);
+    }
+  }
+
+  /**
+   * Enhanced tab navigation for better accessibility
+   */
+  private handleTabNavigation(event: KeyboardEvent): void {
+    const focusableElements = this.getFocusableElements();
+    const currentIndex = focusableElements.findIndex(el => el === document.activeElement);
+    
+    if (event.shiftKey) {
+      // Shift+Tab - go backwards
+      if (currentIndex === 0) {
+        event.preventDefault();
+        focusableElements[focusableElements.length - 1].focus();
+      }
+    } else {
+      // Tab - go forwards
+      if (currentIndex === focusableElements.length - 1) {
+        event.preventDefault();
+        focusableElements[0].focus();
+      }
+    }
+  }
+
+  /**
+   * Gets all focusable elements in the form
+   */
+  private getFocusableElements(): HTMLElement[] {
+    const selectors = [
+      'input:not([disabled])',
+      'textarea:not([disabled])',
+      'select:not([disabled])',
+      'button:not([disabled])',
+      '[tabindex]:not([tabindex="-1"])'
+    ];
+    
+    const elements = document.querySelectorAll(selectors.join(', '));
+    return Array.from(elements) as HTMLElement[];
+  }
+
+  /**
+   * Shows form help information
+   */
+  private showFormHelp(): void {
+    const helpText = [
+      'Ajuda do formulário de categoria:',
+      '• Nome: Obrigatório, entre 2 e 100 caracteres',
+      '• Descrição: Opcional, máximo 500 caracteres',
+      '• Status: Apenas no modo de edição',
+      '',
+      'Atalhos de teclado:',
+      '• Ctrl+S: Salvar',
+      '• Escape: Cancelar',
+      '• F1: Esta ajuda',
+      '• Tab/Shift+Tab: Navegar entre campos'
+    ].join('\n');
+
+    this.categoryAccessibility.announceAction('help', undefined, helpText);
   }
 
   /**
@@ -555,19 +707,68 @@ export class CategoryFormComponent implements OnInit, OnDestroy, AfterViewInit {
    * Announces messages to screen readers
    */
   private announceToScreenReader(message: string): void {
-    // Create a temporary element for screen reader announcement
-    const announcement = document.createElement('div');
-    announcement.setAttribute('aria-live', 'polite');
-    announcement.setAttribute('aria-atomic', 'true');
-    announcement.className = 'sr-only';
-    announcement.textContent = message;
-    
-    document.body.appendChild(announcement);
-    
-    // Remove after announcement
-    setTimeout(() => {
-      document.body.removeChild(announcement);
-    }, 1000);
+    this.categoryAccessibility.announceAction('custom', undefined, message);
+  }
+
+  // Accessibility helper methods for template
+  getCategoryActionLabel(action: string, categoryName?: string): string {
+    return this.categoryAccessibility.getCategoryActionLabel(action, categoryName || '');
+  }
+
+  getFieldDescription(fieldName: string): string {
+    return this.categoryAccessibility.getFieldDescription(fieldName);
+  }
+
+  getValidationErrorMessage(fieldName: string, error: any): string {
+    return this.categoryAccessibility.getValidationErrorMessage(fieldName, error);
+  }
+
+  generateAriaId(prefix: string): string {
+    return this.categoryAccessibility.generateAriaId(prefix);
+  }
+
+  isHighContrastEnabled(): boolean {
+    return this.categoryAccessibility.isHighContrastEnabled();
+  }
+
+  isReducedMotionPreferred(): boolean {
+    return this.categoryAccessibility.isReducedMotionPreferred();
+  }
+
+  // Enhanced error handling with accessibility
+  announceValidationError(fieldName: string, error: any): void {
+    const message = this.getValidationErrorMessage(fieldName, error);
+    this.categoryAccessibility.announceError(message, `Erro no campo ${fieldName}`);
+  }
+
+  announceFormSuccess(): void {
+    const action = this.isEditMode() ? 'updated' : 'created';
+    const categoryName = this.categoryForm.get('nome')?.value || '';
+    this.categoryAccessibility.announceAction(action, categoryName);
+  }
+
+  // Focus management
+  manageFocusOnError(): void {
+    // Find first field with error and focus it
+    const formControls = Object.keys(this.categoryForm.controls);
+    for (const controlName of formControls) {
+      const control = this.categoryForm.get(controlName);
+      if (control?.invalid && control?.touched) {
+        this.focusField(controlName);
+        break;
+      }
+    }
+  }
+
+  focusField(fieldName: string): void {
+    switch (fieldName) {
+      case 'nome':
+        this.focusNameInput();
+        break;
+      case 'descricao':
+        this.focusDescriptionInput();
+        break;
+    }
   }
 
   // Getter methods for template access

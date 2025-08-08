@@ -1,0 +1,1 @@
+export * from './conflict-resolution-modal.component';

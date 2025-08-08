@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy, ChangeDetectionStrategy, signal, computed, inject, ViewChild, ElementRef, Output, EventEmitter } from '@angular/core';
+import { Component, OnInit, OnDestroy, ChangeDetectionStrategy, signal, computed, inject, ViewChild, ElementRef, Output, EventEmitter, HostListener } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule, FormControl } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -7,12 +7,19 @@ import { Subject, takeUntil, debounceTime, distinctUntilChanged, combineLatest, 
 import { CategoryStateService } from '../../services/category-state.service';
 import { CategorySearchService, AdvancedFilters } from '../../services/category-search.service';
 import { CategoryDeletionService } from '../../services/category-deletion.service';
+import { CategoryAccessibilityService } from '../../services/category-accessibility.service';
+import { CategoryPerformanceMetricsService } from '../../services/category-performance-metrics.service';
+import { CategoryLazyLoaderService } from '../../services/category-lazy-loader.service';
+import { CategoryBundleOptimizerService } from '../../services/category-bundle-optimizer.service';
 import { EstabelecimentoService } from '../../../../core/services/estabelecimento.service';
 import { CategoryCardComponent } from '../category-card/category-card.component';
+import { CategoryVirtualScrollComponent } from '../category-virtual-scroll/category-virtual-scroll.component';
 import { AdvancedSearchComponent } from '../advanced-search/advanced-search.component';
 import { CategoryDeletionModalComponent, DeletionModalResult } from '../category-deletion-modal/category-deletion-modal.component';
 import { BulkDeletionModalComponent, BulkDeletionModalResult } from '../bulk-deletion-modal/bulk-deletion-modal.component';
 import { UndoNotificationComponent } from '../undo-notification/undo-notification.component';
+import { OfflineStatusComponent } from '../offline-status/offline-status.component';
+import { AriaAnnounceDirective, FocusTrapDirective, KeyboardNavigationDirective, AriaDescribedByDirective, HighContrastDirective } from '../../directives/accessibility.directive';
 import { Category, CategoryFilters, PaginationState } from '../../models/category.models';
 
 export type ViewMode = 'grid' | 'list';
@@ -27,19 +34,30 @@ export type SortOption = 'nome' | 'dataCriacao' | 'dataAtualizacao';
     ReactiveFormsModule,
     RouterModule,
     CategoryCardComponent,
+    CategoryVirtualScrollComponent,
     AdvancedSearchComponent,
     CategoryDeletionModalComponent,
     BulkDeletionModalComponent,
-    UndoNotificationComponent
+    UndoNotificationComponent,
+    OfflineStatusComponent,
+    AriaAnnounceDirective,
+    FocusTrapDirective,
+    KeyboardNavigationDirective,
+    AriaDescribedByDirective,
+    HighContrastDirective
   ],
   templateUrl: './category-list.component.html',
-  styleUrls: ['./category-list.component.scss'],
+  styleUrls: ['./category-list.component.scss', '../../styles/accessibility.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class CategoryListComponent implements OnInit, OnDestroy {
   private categoryState = inject(CategoryStateService);
   private categorySearch = inject(CategorySearchService);
   private categoryDeletionService = inject(CategoryDeletionService);
+  private categoryAccessibility = inject(CategoryAccessibilityService);
+  private performanceMetrics = inject(CategoryPerformanceMetricsService);
+  private lazyLoader = inject(CategoryLazyLoaderService);
+  private bundleOptimizer = inject(CategoryBundleOptimizerService);
   private estabelecimentoService = inject(EstabelecimentoService);
   private destroy$ = new Subject<void>();
 
@@ -63,6 +81,11 @@ export class CategoryListComponent implements OnInit, OnDestroy {
   selectedCategories = signal<Set<number>>(new Set());
   showBulkActions = computed(() => this.selectedCategories().size > 0);
   isSelectAllMode = signal(false);
+  
+  // Performance and optimization state
+  useVirtualScrolling = signal(false);
+  performanceMode = signal<'standard' | 'optimized'>('standard');
+  showPerformanceInfo = signal(false);
 
   // Deletion modal state
   showDeletionModal = signal(false);
@@ -92,11 +115,19 @@ export class CategoryListComponent implements OnInit, OnDestroy {
   // Accessibility
   private focusedCategoryIndex = signal(-1);
   private lastFocusedElement: HTMLElement | null = null;
+  private skipLinkId = this.categoryAccessibility.generateAriaId('skip-link');
+  private mainContentId = this.categoryAccessibility.generateAriaId('main-content');
+  
+  // Accessibility settings
+  accessibilitySettings$ = this.categoryAccessibility.accessibilitySettings$;
 
   ngOnInit(): void {
+    this.measureComponentLoad();
     this.initializeComponent();
     this.setupFormSubscriptions();
     this.setupKeyboardNavigation();
+    this.setupAccessibility();
+    this.setupPerformanceMonitoring();
     this.loadInitialData();
   }
 
@@ -111,6 +142,22 @@ export class CategoryListComponent implements OnInit, OnDestroy {
     if (savedViewMode && (savedViewMode === 'grid' || savedViewMode === 'list')) {
       this.viewMode.set(savedViewMode);
     }
+
+    // Load performance preferences
+    const performanceMode = localStorage.getItem('category-performance-mode') as 'standard' | 'optimized';
+    if (performanceMode) {
+      this.performanceMode.set(performanceMode);
+    }
+
+    const useVirtualScrolling = localStorage.getItem('category-use-virtual-scrolling') === 'true';
+    this.useVirtualScrolling.set(useVirtualScrolling);
+
+    // Enable virtual scrolling for large datasets automatically
+    this.totalItems.subscribe(count => {
+      if (count > 100 && this.performanceMode() === 'optimized') {
+        this.useVirtualScrolling.set(true);
+      }
+    });
 
     // Setup pagination subscription
     this.pagination$.pipe(
@@ -161,14 +208,76 @@ export class CategoryListComponent implements OnInit, OnDestroy {
     document.addEventListener('keydown', this.handleGlobalKeydown.bind(this));
   }
 
+  private setupAccessibility(): void {
+    // Announce page load
+    this.categoryAccessibility.announceAction('loaded', undefined, 'Página de categorias carregada');
+    
+    // Setup keyboard navigation for the container
+    setTimeout(() => {
+      if (this.categoryListContainer?.nativeElement) {
+        this.categoryAccessibility.setupKeyboardNavigation(this.categoryListContainer.nativeElement);
+      }
+    });
+
+    // Monitor loading states for announcements
+    this.loading$.pipe(
+      takeUntil(this.destroy$)
+    ).subscribe(isLoading => {
+      this.categoryAccessibility.announceLoading(isLoading, 'categorias');
+    });
+
+    // Monitor error states
+    this.error$.pipe(
+      takeUntil(this.destroy$)
+    ).subscribe(error => {
+      if (error) {
+        this.categoryAccessibility.announceError(error, 'Erro ao carregar categorias');
+      }
+    });
+  }
+
+  private setupPerformanceMonitoring(): void {
+    // Monitor bundle size
+    this.bundleOptimizer.analyzeBundleSize().then(analysis => {
+      console.log('Bundle analysis:', analysis);
+    });
+
+    // Preload components based on user behavior
+    this.lazyLoader.preloadComponent({
+      componentName: 'CategoryAnalyticsDashboard',
+      priority: 'medium',
+      preloadDelay: 3000,
+      loadCondition: () => this.hasAnalyticsAccess()
+    });
+
+    // Monitor performance metrics
+    this.performanceMetrics.performanceData$.pipe(
+      takeUntil(this.destroy$)
+    ).subscribe(data => {
+      // Auto-enable optimizations if performance is poor
+      if (data.listRenderTime > 200 && this.performanceMode() === 'standard') {
+        this.enablePerformanceOptimizations();
+      }
+    });
+  }
+
+  private measureComponentLoad(): void {
+    this.performanceMetrics.measureComponentLoad('CategoryListComponent');
+  }
+
   private loadInitialData(): void {
     // Load categories when establishment is selected
     this.selectedEstablishment$.pipe(
       takeUntil(this.destroy$)
     ).subscribe(establishment => {
       if (establishment) {
+        const startTime = performance.now();
         this.categoryState.setEstablishmentContext(establishment.id);
-        this.categoryState.loadCategories(establishment.id).subscribe();
+        this.categoryState.loadCategories(establishment.id).subscribe({
+          next: () => {
+            this.performanceMetrics.measureApiCall('categories_load', startTime);
+          }
+        });
       }
     });
   }
@@ -187,7 +296,11 @@ export class CategoryListComponent implements OnInit, OnDestroy {
     if (mode !== this.viewMode()) {
       this.viewMode.set(mode);
       localStorage.setItem('category-list-view-mode', mode);
-      this.announceToScreenReader(`Modo de visualização alterado para ${mode === 'grid' ? 'grade' : 'lista'}`);
+      this.categoryAccessibility.announceAction(
+        'view_mode_changed', 
+        undefined, 
+        `Modo de visualização alterado para ${mode === 'grid' ? 'grade' : 'lista'}`
+      );
     }
   }
 
@@ -478,6 +591,145 @@ export class CategoryListComponent implements OnInit, OnDestroy {
   }
 
   // Keyboard navigation
+  @HostListener('keydown', ['$event'])
+  onKeyDown(event: KeyboardEvent): void {
+    this.handleKeyboardNavigation(event);
+  }
+
+  @HostListener('document:keydown', ['$event'])
+  onDocumentKeyDown(event: KeyboardEvent): void {
+    this.handleGlobalKeydown(event);
+  }
+
+  private handleKeyboardNavigation(event: KeyboardEvent): void {
+    const target = event.target as HTMLElement;
+    
+    // Handle category grid/list navigation
+    if (target.closest('.category-list__grid')) {
+      this.handleCategoryGridNavigation(event);
+    }
+    
+    // Handle pagination navigation
+    if (target.closest('.pagination')) {
+      this.handlePaginationNavigation(event);
+    }
+  }
+
+  private handleCategoryGridNavigation(event: KeyboardEvent): void {
+    const categoryItems = Array.from(
+      this.categoryListContainer.nativeElement.querySelectorAll('.category-list__item')
+    ) as HTMLElement[];
+    
+    const currentIndex = categoryItems.findIndex(item => 
+      item.contains(document.activeElement)
+    );
+
+    switch (event.key) {
+      case 'ArrowDown':
+        event.preventDefault();
+        this.navigateToCategory(categoryItems, currentIndex, 'down');
+        break;
+      case 'ArrowUp':
+        event.preventDefault();
+        this.navigateToCategory(categoryItems, currentIndex, 'up');
+        break;
+      case 'ArrowRight':
+        if (this.viewMode() === 'grid') {
+          event.preventDefault();
+          this.navigateToCategory(categoryItems, currentIndex, 'right');
+        }
+        break;
+      case 'ArrowLeft':
+        if (this.viewMode() === 'grid') {
+          event.preventDefault();
+          this.navigateToCategory(categoryItems, currentIndex, 'left');
+        }
+        break;
+      case 'Home':
+        event.preventDefault();
+        this.navigateToCategory(categoryItems, -1, 'first');
+        break;
+      case 'End':
+        event.preventDefault();
+        this.navigateToCategory(categoryItems, -1, 'last');
+        break;
+    }
+  }
+
+  private handlePaginationNavigation(event: KeyboardEvent): void {
+    switch (event.key) {
+      case 'Home':
+        if (event.ctrlKey) {
+          event.preventDefault();
+          this.goToFirstPage();
+        }
+        break;
+      case 'End':
+        if (event.ctrlKey) {
+          event.preventDefault();
+          this.goToLastPage();
+        }
+        break;
+      case 'PageUp':
+        event.preventDefault();
+        this.goToPreviousPage();
+        break;
+      case 'PageDown':
+        event.preventDefault();
+        this.goToNextPage();
+        break;
+    }
+  }
+
+  private navigateToCategory(
+    categoryItems: HTMLElement[], 
+    currentIndex: number, 
+    direction: 'up' | 'down' | 'left' | 'right' | 'first' | 'last'
+  ): void {
+    if (categoryItems.length === 0) return;
+
+    let targetIndex = currentIndex;
+    const itemsPerRow = this.viewMode() === 'grid' ? this.getItemsPerRow() : 1;
+
+    switch (direction) {
+      case 'up':
+        targetIndex = Math.max(0, currentIndex - itemsPerRow);
+        break;
+      case 'down':
+        targetIndex = Math.min(categoryItems.length - 1, currentIndex + itemsPerRow);
+        break;
+      case 'left':
+        targetIndex = Math.max(0, currentIndex - 1);
+        break;
+      case 'right':
+        targetIndex = Math.min(categoryItems.length - 1, currentIndex + 1);
+        break;
+      case 'first':
+        targetIndex = 0;
+        break;
+      case 'last':
+        targetIndex = categoryItems.length - 1;
+        break;
+    }
+
+    const targetItem = categoryItems[targetIndex];
+    if (targetItem) {
+      const focusableElement = targetItem.querySelector('button, a, [tabindex]') as HTMLElement;
+      if (focusableElement) {
+        focusableElement.focus();
+        this.focusedCategoryIndex.set(targetIndex);
+      }
+    }
+  }
+
+  private getItemsPerRow(): number {
+    // Calculate items per row based on container width and item width
+    // This is a simplified calculation - in a real app you might want to be more precise
+    const containerWidth = this.categoryListContainer?.nativeElement.clientWidth || 1200;
+    const itemWidth = 300; // Approximate card width
+    return Math.floor(containerWidth / itemWidth) || 1;
+  }
+
   private handleGlobalKeydown(event: KeyboardEvent): void {
     // Only handle if focus is within the component
     if (!this.categoryListContainer?.nativeElement.contains(event.target as Node)) {
@@ -490,6 +742,7 @@ export class CategoryListComponent implements OnInit, OnDestroy {
         if (event.ctrlKey || event.metaKey) {
           event.preventDefault();
           this.focusSearchInput();
+          this.categoryAccessibility.announceAction('focus_search', undefined, 'Campo de busca focado');
         }
         break;
       case 'r':
@@ -517,13 +770,50 @@ export class CategoryListComponent implements OnInit, OnDestroy {
       case 'A':
         if (event.ctrlKey || event.metaKey) {
           event.preventDefault();
-          // TODO: Implement select all for current page
+          this.selectAllCurrentPage();
         }
         break;
       case 'Escape':
         this.clearSelection();
+        this.categoryAccessibility.announceAction('selection_cleared', undefined, 'Seleção cancelada');
+        break;
+      case '?':
+        if (event.shiftKey) {
+          event.preventDefault();
+          this.showKeyboardShortcuts();
+        }
         break;
     }
+  }
+
+  private selectAllCurrentPage(): void {
+    this.categories$.pipe(
+      takeUntil(this.destroy$),
+      take(1)
+    ).subscribe(categories => {
+      this.toggleSelectAll(categories);
+    });
+  }
+
+  private showKeyboardShortcuts(): void {
+    const shortcuts = [
+      'Ctrl+F: Focar no campo de busca',
+      'Ctrl+R: Atualizar lista',
+      'Ctrl+N: Nova categoria',
+      'Ctrl+V: Alternar modo de visualização',
+      'Ctrl+A: Selecionar todas',
+      'Escape: Cancelar seleção',
+      'Setas: Navegar entre categorias',
+      'Home/End: Primeira/última categoria',
+      'Ctrl+Home/End: Primeira/última página',
+      'PageUp/PageDown: Página anterior/próxima'
+    ].join('\n');
+
+    this.categoryAccessibility.announceAction(
+      'shortcuts_help', 
+      undefined, 
+      `Atalhos de teclado disponíveis: ${shortcuts}`
+    );
   }
 
   // Utility methods
@@ -540,18 +830,7 @@ export class CategoryListComponent implements OnInit, OnDestroy {
   }
 
   private announceToScreenReader(message: string): void {
-    // Create a temporary element for screen reader announcements
-    const announcement = document.createElement('div');
-    announcement.setAttribute('aria-live', 'polite');
-    announcement.setAttribute('aria-atomic', 'true');
-    announcement.className = 'sr-only';
-    announcement.textContent = message;
-    
-    document.body.appendChild(announcement);
-    
-    setTimeout(() => {
-      document.body.removeChild(announcement);
-    }, 1000);
+    this.categoryAccessibility.announceAction('custom', undefined, message);
   }
 
   // TrackBy functions for performance
@@ -614,5 +893,200 @@ export class CategoryListComponent implements OnInit, OnDestroy {
     }
     
     return rangeWithDots;
+  }
+
+  // Accessibility helper methods
+  getCategoryActionLabel(action: string, categoryName: string): string {
+    return this.categoryAccessibility.getCategoryActionLabel(action, categoryName);
+  }
+
+  getFieldDescription(fieldName: string): string {
+    return this.categoryAccessibility.getFieldDescription(fieldName);
+  }
+
+  generateAriaId(prefix: string): string {
+    return this.categoryAccessibility.generateAriaId(prefix);
+  }
+
+  isHighContrastEnabled(): boolean {
+    return this.categoryAccessibility.isHighContrastEnabled();
+  }
+
+  isReducedMotionPreferred(): boolean {
+    return this.categoryAccessibility.isReducedMotionPreferred();
+  }
+
+  // Enhanced announcement methods
+  announcePageChange(page: number): void {
+    this.categoryAccessibility.announceAction(
+      'page_changed',
+      undefined,
+      `Página ${page} de ${this.totalPages()} carregada`
+    );
+  }
+
+  announceFilterChange(filterType: string, value: any): void {
+    this.categoryAccessibility.announceAction(
+      'filter_changed',
+      undefined,
+      `Filtro ${filterType} aplicado: ${value}`
+    );
+  }
+
+  announceSelectionChange(): void {
+    const count = this.selectedCategories().size;
+    if (count === 0) {
+      this.categoryAccessibility.announceAction('selection_cleared');
+    } else {
+      this.categoryAccessibility.announceAction(
+        'selection_changed',
+        undefined,
+        `${count} categoria${count === 1 ? '' : 's'} selecionada${count === 1 ? '' : 's'}`
+      );
+    }
+  }
+
+  // Focus management methods
+  manageFocusForModal(action: 'open' | 'close', modalType: string): void {
+    const container = document.querySelector(`[data-modal="${modalType}"]`) as HTMLElement;
+    if (container) {
+      this.categoryAccessibility.manageFocus(
+        container,
+        action,
+        this.lastFocusedElement || undefined
+      );
+    }
+  }
+
+  setLastFocusedElement(element: HTMLElement): void {
+    this.lastFocusedElement = element;
+  }
+
+  // Skip link functionality
+  skipToMainContent(): void {
+    const mainContent = document.getElementById(this.mainContentId);
+    if (mainContent) {
+      mainContent.focus();
+      this.categoryAccessibility.announceAction(
+        'skip_to_content',
+        undefined,
+        'Navegado para conteúdo principal'
+      );
+    }
+  }
+
+  // Accessibility testing helpers (for development)
+  testAccessibility(): void {
+    if (typeof window !== 'undefined' && (window as any).axe) {
+      (window as any).axe.run().then((results: any) => {
+        console.log('Accessibility test results:', results);
+        if (results.violations.length > 0) {
+          console.warn('Accessibility violations found:', results.violations);
+        }
+      });
+    }
+  }
+
+  // Performance optimization methods
+  enablePerformanceOptimizations(): void {
+    this.performanceMode.set('optimized');
+    this.useVirtualScrolling.set(true);
+    localStorage.setItem('category-performance-mode', 'optimized');
+    localStorage.setItem('category-use-virtual-scrolling', 'true');
+    
+    this.announceToScreenReader('Otimizações de performance ativadas');
+  }
+
+  disablePerformanceOptimizations(): void {
+    this.performanceMode.set('standard');
+    this.useVirtualScrolling.set(false);
+    localStorage.setItem('category-performance-mode', 'standard');
+    localStorage.setItem('category-use-virtual-scrolling', 'false');
+    
+    this.announceToScreenReader('Otimizações de performance desativadas');
+  }
+
+  toggleVirtualScrolling(): void {
+    const newValue = !this.useVirtualScrolling();
+    this.useVirtualScrolling.set(newValue);
+    localStorage.setItem('category-use-virtual-scrolling', newValue.toString());
+    
+    this.announceToScreenReader(
+      `Rolagem virtual ${newValue ? 'ativada' : 'desativada'}`
+    );
+  }
+
+  togglePerformanceInfo(): void {
+    this.showPerformanceInfo.set(!this.showPerformanceInfo());
+  }
+
+  // Virtual scroll event handlers
+  onVirtualScrollEdit(category: Category): void {
+    this.onEditCategory(category);
+  }
+
+  onVirtualScrollDelete(category: Category): void {
+    this.onDeleteCategory(category);
+  }
+
+  onVirtualScrollView(category: Category): void {
+    this.onViewCategoryDetails(category);
+  }
+
+  onVirtualScrollLoadMore(): void {
+    // Load more categories if available
+    if (this.currentPage() < this.totalPages()) {
+      this.goToNextPage();
+    }
+  }
+
+  // Performance monitoring methods
+  measureListRender(itemCount: number): void {
+    this.performanceMetrics.measureListRender(itemCount);
+  }
+
+  measureSearchPerformance(): void {
+    const endTiming = this.performanceMetrics.startTiming('category_search');
+    
+    // Simulate search completion
+    setTimeout(() => {
+      endTiming();
+    }, 0);
+  }
+
+  getPerformanceData() {
+    return this.performanceMetrics.getPerformanceSummary();
+  }
+
+  // Bundle optimization methods
+  async loadAnalyticsLazily(): Promise<void> {
+    try {
+      const component = await this.lazyLoader.loadAnalyticsComponent();
+      console.log('Analytics component loaded:', component);
+    } catch (error) {
+      console.error('Failed to load analytics component:', error);
+    }
+  }
+
+  async loadImportExportLazily(): Promise<void> {
+    try {
+      const component = await this.lazyLoader.loadImportExportComponent();
+      console.log('Import/Export component loaded:', component);
+    } catch (error) {
+      console.error('Failed to load import/export component:', error);
+    }
+  }
+
+  // Helper methods
+  private hasAnalyticsAccess(): boolean {
+    return localStorage.getItem('hasAnalyticsAccess') === 'true';
+  }
+
+  shouldUseVirtualScrolling(): boolean {
+    return this.useVirtualScrolling() && this.totalItems() > 50;
+  }
+
+  getOptimizationRecommendations(): string[] {
+    return this.bundleOptimizer.getOptimizationRecommendations();
   }
 }

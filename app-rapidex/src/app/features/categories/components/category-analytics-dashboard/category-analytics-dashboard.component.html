@@ -1,0 +1,331 @@
+<div class="analytics-dashboard">
+  <!-- Header Section -->
+  <div class="dashboard-header">
+    <div class="header-content">
+      <h1 class="dashboard-title">
+        <mat-icon>analytics</mat-icon>
+        Analytics de Categorias
+      </h1>
+      <div class="header-actions">
+        <button
+          mat-raised-button
+          color="primary"
+          (click)="onRefresh()"
+          [disabled]="loading()"
+          matTooltip="Atualizar dados"
+        >
+          <mat-icon>refresh</mat-icon>
+          Atualizar
+        </button>
+        
+        <button
+          mat-button
+          [matMenuTriggerFor]="exportMenu"
+          [disabled]="!hasData()"
+          matTooltip="Exportar relatório"
+        >
+          <mat-icon>download</mat-icon>
+          Exportar
+        </button>
+        <mat-menu #exportMenu="matMenu">
+          <button mat-menu-item (click)="onExport('pdf')">
+            <mat-icon>picture_as_pdf</mat-icon>
+            <span>PDF</span>
+          </button>
+          <button mat-menu-item (click)="onExport('excel')">
+            <mat-icon>table_chart</mat-icon>
+            <span>Excel</span>
+          </button>
+          <button mat-menu-item (click)="onExport('csv')">
+            <mat-icon>description</mat-icon>
+            <span>CSV</span>
+          </button>
+        </mat-menu>
+      </div>
+    </div>
+  </div>
+
+  <!-- Filters Section -->
+  <mat-card class="filters-card">
+    <mat-card-header>
+      <mat-card-title>Filtros</mat-card-title>
+    </mat-card-header>
+    <mat-card-content>
+      <form [formGroup]="filtersForm" class="filters-form">
+        <div class="filter-row">
+          <mat-form-field appearance="outline">
+            <mat-label>Data Inicial</mat-label>
+            <input matInput [matDatepicker]="startPicker" formControlName="startDate">
+            <mat-datepicker-toggle matIconSuffix [for]="startPicker"></mat-datepicker-toggle>
+            <mat-datepicker #startPicker></mat-datepicker>
+          </mat-form-field>
+
+          <mat-form-field appearance="outline">
+            <mat-label>Data Final</mat-label>
+            <input matInput [matDatepicker]="endPicker" formControlName="endDate">
+            <mat-datepicker-toggle matIconSuffix [for]="endPicker"></mat-datepicker-toggle>
+            <mat-datepicker #endPicker></mat-datepicker>
+          </mat-form-field>
+
+          <mat-form-field appearance="outline">
+            <mat-label>Agrupar por</mat-label>
+            <mat-select formControlName="groupBy">
+              <mat-option value="day">Dia</mat-option>
+              <mat-option value="week">Semana</mat-option>
+              <mat-option value="month">Mês</mat-option>
+            </mat-select>
+          </mat-form-field>
+
+          <mat-checkbox formControlName="includeInactive" class="include-inactive-checkbox">
+            Incluir categorias inativas
+          </mat-checkbox>
+
+          <button
+            mat-stroked-button
+            type="button"
+            (click)="onResetFilters()"
+            matTooltip="Resetar filtros"
+          >
+            <mat-icon>clear</mat-icon>
+            Limpar
+          </button>
+        </div>
+      </form>
+    </mat-card-content>
+  </mat-card>
+
+  <!-- Loading State -->
+  <div *ngIf="loading()" class="loading-container">
+    <mat-spinner diameter="50"></mat-spinner>
+    <p>Carregando dados de analytics...</p>
+  </div>
+
+  <!-- Error State -->
+  <mat-card *ngIf="error() && !loading()" class="error-card">
+    <mat-card-content>
+      <div class="error-content">
+        <mat-icon color="warn">error</mat-icon>
+        <p>{{ error() }}</p>
+        <button mat-raised-button color="primary" (click)="onRefresh()">
+          Tentar Novamente
+        </button>
+      </div>
+    </mat-card-content>
+  </mat-card>
+
+  <!-- Main Content -->
+  <div *ngIf="hasData() && !loading()" class="dashboard-content">
+    
+    <!-- Performance Metrics Cards -->
+    <div class="metrics-grid" *ngIf="performanceMetrics() as metrics">
+      <mat-card class="metric-card">
+        <mat-card-content>
+          <div class="metric-content">
+            <div class="metric-icon">
+              <mat-icon>category</mat-icon>
+            </div>
+            <div class="metric-info">
+              <div class="metric-value">{{ metrics.totalCategories }}</div>
+              <div class="metric-label">Total de Categorias</div>
+            </div>
+          </div>
+        </mat-card-content>
+      </mat-card>
+
+      <mat-card class="metric-card">
+        <mat-card-content>
+          <div class="metric-content">
+            <div class="metric-icon active">
+              <mat-icon>check_circle</mat-icon>
+            </div>
+            <div class="metric-info">
+              <div class="metric-value">{{ metrics.activeCategories }}</div>
+              <div class="metric-label">Categorias Ativas</div>
+            </div>
+          </div>
+        </mat-card-content>
+      </mat-card>
+
+      <mat-card class="metric-card">
+        <mat-card-content>
+          <div class="metric-content">
+            <div class="metric-icon">
+              <mat-icon>inventory</mat-icon>
+            </div>
+            <div class="metric-info">
+              <div class="metric-value">{{ metrics.averageProductsPerCategory.toFixed(1) }}</div>
+              <div class="metric-label">Média de Produtos</div>
+            </div>
+          </div>
+        </mat-card-content>
+      </mat-card>
+
+      <mat-card class="metric-card">
+        <mat-card-content>
+          <div class="metric-content">
+            <div class="metric-icon warning">
+              <mat-icon>warning</mat-icon>
+            </div>
+            <div class="metric-info">
+              <div class="metric-value">{{ metrics.categoriesWithoutProducts }}</div>
+              <div class="metric-label">Sem Produtos</div>
+            </div>
+          </div>
+        </mat-card-content>
+      </mat-card>
+    </div>
+
+    <!-- Charts Section -->
+    <mat-tab-group class="charts-tabs" animationDuration="300ms">
+      
+      <!-- Usage Overview Tab -->
+      <mat-tab label="Visão Geral">
+        <div class="tab-content">
+          <div class="charts-row">
+            <mat-card class="chart-card">
+              <mat-card-header>
+                <mat-card-title>Uso de Categorias</mat-card-title>
+                <mat-card-subtitle>Produtos vs Pedidos por categoria</mat-card-subtitle>
+              </mat-card-header>
+              <mat-card-content>
+                <div class="chart-container">
+                  <canvas id="usageChart"></canvas>
+                </div>
+              </mat-card-content>
+            </mat-card>
+
+            <mat-card class="chart-card">
+              <mat-card-header>
+                <mat-card-title>Distribuição de Produtos</mat-card-title>
+                <mat-card-subtitle>Percentual de produtos por categoria</mat-card-subtitle>
+              </mat-card-header>
+              <mat-card-content>
+                <div class="chart-container">
+                  <canvas id="distributionChart"></canvas>
+                </div>
+              </mat-card-content>
+            </mat-card>
+          </div>
+        </div>
+      </mat-tab>
+
+      <!-- Trends Tab -->
+      <mat-tab label="Tendências">
+        <div class="tab-content">
+          <div class="charts-row">
+            <mat-card class="chart-card full-width">
+              <mat-card-header>
+                <mat-card-title>Crescimento de Categorias</mat-card-title>
+                <mat-card-subtitle>Evolução ao longo do tempo</mat-card-subtitle>
+              </mat-card-header>
+              <mat-card-content>
+                <div class="chart-container">
+                  <canvas id="trendChart"></canvas>
+                </div>
+              </mat-card-content>
+            </mat-card>
+          </div>
+
+          <div class="charts-row">
+            <mat-card class="chart-card full-width">
+              <mat-card-header>
+                <mat-card-title>Uso ao Longo do Tempo</mat-card-title>
+                <mat-card-subtitle>Visualizações, pedidos e receita</mat-card-subtitle>
+              </mat-card-header>
+              <mat-card-content>
+                <div class="chart-container">
+                  <canvas id="usageTimeChart"></canvas>
+                </div>
+              </mat-card-content>
+            </mat-card>
+          </div>
+        </div>
+      </mat-tab>
+
+      <!-- Performance Tab -->
+      <mat-tab label="Performance">
+        <div class="tab-content">
+          <div class="charts-row">
+            <mat-card class="chart-card full-width">
+              <mat-card-header>
+                <mat-card-title>Top Categorias por Receita</mat-card-title>
+                <mat-card-subtitle>Comparação de performance</mat-card-subtitle>
+              </mat-card-header>
+              <mat-card-content>
+                <div class="chart-container">
+                  <canvas id="performanceChart"></canvas>
+                </div>
+              </mat-card-content>
+            </mat-card>
+          </div>
+        </div>
+      </mat-tab>
+
+      <!-- Detailed Stats Tab -->
+      <mat-tab label="Estatísticas Detalhadas">
+        <div class="tab-content">
+          <mat-card class="stats-table-card">
+            <mat-card-header>
+              <mat-card-title>Estatísticas por Categoria</mat-card-title>
+              <mat-card-subtitle>Dados detalhados de uso e performance</mat-card-subtitle>
+            </mat-card-header>
+            <mat-card-content>
+              <div class="table-container">
+                <table class="stats-table">
+                  <thead>
+                    <tr>
+                      <th>Categoria</th>
+                      <th>Produtos</th>
+                      <th>Ativos</th>
+                      <th>Visualizações</th>
+                      <th>Pedidos</th>
+                      <th>Receita</th>
+                      <th>Último Uso</th>
+                      <th>Frequência</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr *ngFor="let stat of usageStats(); trackBy: trackByStat">
+                      <td class="category-name">{{ stat.categoryName }}</td>
+                      <td class="number">{{ stat.productCount }}</td>
+                      <td class="number">{{ stat.activeProductCount }}</td>
+                      <td class="number">{{ stat.totalViews }}</td>
+                      <td class="number">{{ stat.totalOrders }}</td>
+                      <td class="currency">{{ formatCurrency(stat.revenue) }}</td>
+                      <td class="date">{{ formatDate(stat.lastUsed) }}</td>
+                      <td class="frequency">
+                        <span 
+                          class="frequency-badge"
+                          [style.background-color]="getUsageFrequencyColor(stat.usageFrequency)"
+                        >
+                          {{ getUsageFrequencyLabel(stat.usageFrequency) }}
+                        </span>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </mat-card-content>
+          </mat-card>
+        </div>
+      </mat-tab>
+
+    </mat-tab-group>
+
+  </div>
+
+  <!-- Empty State -->
+  <mat-card *ngIf="!hasData() && !loading() && !error()" class="empty-state-card">
+    <mat-card-content>
+      <div class="empty-state">
+        <mat-icon>analytics</mat-icon>
+        <h2>Nenhum dado disponível</h2>
+        <p>Selecione um estabelecimento para visualizar os dados de analytics.</p>
+        <button mat-raised-button color="primary" (click)="onRefresh()">
+          Carregar Dados
+        </button>
+      </div>
+    </mat-card-content>
+  </mat-card>
+
+</div>

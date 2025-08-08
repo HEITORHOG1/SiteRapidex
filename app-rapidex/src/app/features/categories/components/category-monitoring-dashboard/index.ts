@@ -1,0 +1,1 @@
+export { CategoryMonitoringDashboardComponent } from './category-monitoring-dashboard.component';

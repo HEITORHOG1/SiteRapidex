@@ -1,0 +1,347 @@
+.import-export-container {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 20px;
+}
+
+.tabs {
+  display: flex;
+  border-bottom: 2px solid #e0e0e0;
+  margin-bottom: 20px;
+}
+
+.tab-button {
+  background: none;
+  border: none;
+  padding: 12px 24px;
+  cursor: pointer;
+  font-size: 16px;
+  color: #666;
+  border-bottom: 2px solid transparent;
+  transition: all 0.3s ease;
+
+  &:hover {
+    color: #2196F3;
+    background-color: #f5f5f5;
+  }
+
+  &.active {
+    color: #2196F3;
+    border-bottom-color: #2196F3;
+    font-weight: 600;
+  }
+}
+
+.tab-content {
+  animation: fadeIn 0.3s ease-in-out;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.form-group {
+  margin-bottom: 20px;
+
+  label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 500;
+    color: #333;
+
+    &:has(input[type="checkbox"]) {
+      display: flex;
+      align-items: center;
+      cursor: pointer;
+
+      input[type="checkbox"] {
+        margin-right: 8px;
+        margin-bottom: 0;
+      }
+    }
+  }
+
+  input[type="file"],
+  select {
+    width: 100%;
+    padding: 10px;
+    border: 2px solid #e0e0e0;
+    border-radius: 4px;
+    font-size: 14px;
+    transition: border-color 0.3s ease;
+
+    &:focus {
+      outline: none;
+      border-color: #2196F3;
+    }
+
+    &:disabled {
+      background-color: #f5f5f5;
+      cursor: not-allowed;
+    }
+  }
+
+  .help-text {
+    display: block;
+    margin-top: 4px;
+    color: #666;
+    font-size: 12px;
+  }
+}
+
+.form-actions {
+  display: flex;
+  gap: 12px;
+  margin-top: 24px;
+}
+
+.btn {
+  padding: 12px 24px;
+  border: none;
+  border-radius: 4px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+
+  &.btn-primary {
+    background-color: #2196F3;
+    color: white;
+
+    &:hover:not(:disabled) {
+      background-color: #1976D2;
+    }
+  }
+
+  &.btn-secondary {
+    background-color: #f5f5f5;
+    color: #333;
+    border: 1px solid #e0e0e0;
+
+    &:hover:not(:disabled) {
+      background-color: #e0e0e0;
+    }
+  }
+
+  &.btn-warning {
+    background-color: #FF9800;
+    color: white;
+
+    &:hover:not(:disabled) {
+      background-color: #F57C00;
+    }
+  }
+}
+
+.progress-section,
+.result-section,
+.validation-section {
+  margin-top: 30px;
+  padding: 20px;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  background-color: #fafafa;
+
+  h4, h5 {
+    margin-top: 0;
+    margin-bottom: 16px;
+    color: #333;
+  }
+}
+
+.progress-bar {
+  width: 100%;
+  height: 20px;
+  background-color: #e0e0e0;
+  border-radius: 10px;
+  overflow: hidden;
+  margin-bottom: 12px;
+}
+
+.progress-fill {
+  height: 100%;
+  background-color: #4CAF50;
+  transition: width 0.3s ease;
+}
+
+.progress-info {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 12px;
+
+  p {
+    margin: 0;
+    padding: 8px;
+    background-color: white;
+    border-radius: 4px;
+    font-size: 14px;
+  }
+}
+
+.result-summary,
+.validation-summary {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 12px;
+  margin-bottom: 20px;
+
+  p {
+    margin: 0;
+    padding: 12px;
+    background-color: white;
+    border-radius: 4px;
+    border-left: 4px solid #2196F3;
+
+    strong {
+      color: #333;
+    }
+  }
+}
+
+.rollback-section {
+  margin-top: 20px;
+  padding-top: 20px;
+  border-top: 1px solid #e0e0e0;
+}
+
+.errors-section,
+.validation-errors {
+  margin-top: 20px;
+
+  h5 {
+    color: #d32f2f;
+  }
+}
+
+.error-list,
+.validation-list {
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.error-item,
+.validation-item {
+  padding: 12px;
+  margin-bottom: 8px;
+  background-color: white;
+  border-radius: 4px;
+  border-left: 4px solid #d32f2f;
+
+  &.error {
+    border-left-color: #d32f2f;
+  }
+
+  strong {
+    color: #d32f2f;
+  }
+
+  ul {
+    margin: 8px 0 0 0;
+    padding-left: 20px;
+
+    li {
+      margin-bottom: 4px;
+
+      &.error {
+        color: #d32f2f;
+      }
+
+      &.warning {
+        color: #FF9800;
+      }
+    }
+  }
+}
+
+.success {
+  color: #4CAF50;
+  font-weight: 600;
+}
+
+.error {
+  color: #d32f2f;
+  font-weight: 600;
+}
+
+// Responsive design
+@media (max-width: 768px) {
+  .import-export-container {
+    padding: 16px;
+  }
+
+  .tabs {
+    flex-direction: column;
+  }
+
+  .tab-button {
+    text-align: left;
+    border-bottom: 1px solid #e0e0e0;
+    border-right: none;
+
+    &.active {
+      border-bottom-color: #e0e0e0;
+      border-left: 4px solid #2196F3;
+    }
+  }
+
+  .form-actions {
+    flex-direction: column;
+  }
+
+  .progress-info,
+  .result-summary,
+  .validation-summary {
+    grid-template-columns: 1fr;
+  }
+}
+
+// Loading states
+.btn:disabled {
+  position: relative;
+
+  &::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    right: 12px;
+    transform: translateY(-50%);
+    width: 16px;
+    height: 16px;
+    border: 2px solid transparent;
+    border-top: 2px solid currentColor;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+  }
+}
+
+@keyframes spin {
+  0% { transform: translateY(-50%) rotate(0deg); }
+  100% { transform: translateY(-50%) rotate(360deg); }
+}
+
+// Accessibility improvements
+.tab-button:focus,
+.btn:focus,
+input:focus,
+select:focus {
+  outline: 2px solid #2196F3;
+  outline-offset: 2px;
+}
+
+// High contrast mode support
+@media (prefers-contrast: high) {
+  .tab-button.active {
+    background-color: #2196F3;
+    color: white;
+  }
+
+  .progress-fill {
+    background-color: #000;
+  }
+}

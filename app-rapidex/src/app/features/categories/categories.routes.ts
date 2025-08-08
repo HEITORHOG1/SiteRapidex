@@ -85,6 +85,28 @@ export const CATEGORY_ROUTES: Routes = [
           (route) => validateNumericParam('id')(route)
         ]
       },
+      {
+        path: 'analytics',
+        loadComponent: () => 
+          import('./pages/category-analytics-page/category-analytics-page.component')
+            .then(c => c.CategoryAnalyticsPageComponent),
+        title: 'Analytics de Categorias',
+        data: {
+          breadcrumb: 'Analytics',
+          description: 'Relatórios e estatísticas de categorias'
+        }
+      },
+      {
+        path: 'import-export',
+        loadComponent: () => 
+          import('./components/category-import-export/category-import-export.component')
+            .then(c => c.CategoryImportExportComponent),
+        title: 'Importar/Exportar Categorias',
+        data: {
+          breadcrumb: 'Importar/Exportar',
+          description: 'Importar e exportar categorias em lote'
+        }
+      },
       // Catch-all route for invalid paths
       {
         path: '**',
@@ -105,7 +127,17 @@ export const CATEGORY_ENDPOINTS = {
   UPDATE: '/api/categorias/estabelecimentos/{estabelecimentoId}/categorias/{id}',
   DELETE: '/api/categorias/estabelecimentos/{estabelecimentoId}/categorias/{id}',
   VALIDATE_NAME: '/api/categorias/estabelecimentos/{estabelecimentoId}/categorias/validate-name',
-  CHECK_DELETION: '/api/categorias/estabelecimentos/{estabelecimentoId}/categorias/{id}/check-deletion'
+  CHECK_DELETION: '/api/categorias/estabelecimentos/{estabelecimentoId}/categorias/{id}/check-deletion',
+  ANALYTICS: '/api/categorias/estabelecimentos/{estabelecimentoId}/categorias/analytics',
+  USAGE_STATS: '/api/categorias/estabelecimentos/{estabelecimentoId}/categorias/usage-stats',
+  PERFORMANCE_METRICS: '/api/categorias/estabelecimentos/{estabelecimentoId}/categorias/performance-metrics',
+  EXPORT_REPORT: '/api/categorias/estabelecimentos/{estabelecimentoId}/categorias/export-report',
+  SCHEDULE_REPORT: '/api/categorias/estabelecimentos/{estabelecimentoId}/categorias/schedule-report',
+  SCHEDULED_REPORTS: '/api/categorias/estabelecimentos/{estabelecimentoId}/categorias/scheduled-reports',
+  IMPORT_CATEGORIES: '/api/categorias/estabelecimentos/{estabelecimentoId}/categorias/import',
+  EXPORT_CATEGORIES: '/api/categorias/estabelecimentos/{estabelecimentoId}/categorias/export',
+  IMPORT_HISTORY: '/api/categorias/estabelecimentos/{estabelecimentoId}/import-history',
+  IMPORT_ROLLBACK: '/api/categorias/import/rollback'
 } as const;
 
 /**
@@ -136,6 +168,18 @@ export const CATEGORY_ROUTE_CONFIG = {
     title: 'Detalhes da Categoria',
     icon: '👁️',
     description: 'Visualizar detalhes da categoria'
+  },
+  analytics: {
+    path: '/categories/analytics',
+    title: 'Analytics de Categorias',
+    icon: '📊',
+    description: 'Relatórios e estatísticas de categorias'
+  },
+  importExport: {
+    path: '/categories/import-export',
+    title: 'Importar/Exportar',
+    icon: '📥📤',
+    description: 'Importar e exportar categorias em lote'
   }
 } as const;
 
@@ -169,6 +213,20 @@ export class CategoryRouteHelper {
    */
   static getDetailUrl(categoryId: number): string {
     return `${CATEGORY_ROUTE_CONFIG.detail.path}/${categoryId}`;
+  }
+
+  /**
+   * Builds category analytics URL
+   */
+  static getAnalyticsUrl(): string {
+    return CATEGORY_ROUTE_CONFIG.analytics.path;
+  }
+
+  /**
+   * Builds category import/export URL
+   */
+  static getImportExportUrl(): string {
+    return CATEGORY_ROUTE_CONFIG.importExport.path;
   }
 
   /**

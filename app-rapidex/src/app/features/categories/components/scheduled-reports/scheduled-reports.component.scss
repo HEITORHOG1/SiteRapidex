@@ -1,0 +1,331 @@
+.scheduled-reports {
+  padding: 24px;
+  max-width: 1200px;
+  margin: 0 auto;
+
+  .header {
+    margin-bottom: 32px;
+    text-align: center;
+
+    h2 {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      margin: 0 0 8px 0;
+      font-size: 28px;
+      font-weight: 500;
+      color: #1976d2;
+
+      mat-icon {
+        font-size: 32px;
+        width: 32px;
+        height: 32px;
+      }
+    }
+
+    .subtitle {
+      margin: 0;
+      color: #666;
+      font-size: 16px;
+    }
+  }
+
+  .form-card {
+    margin-bottom: 32px;
+
+    .report-form {
+      .form-row {
+        display: flex;
+        gap: 16px;
+        align-items: flex-start;
+        margin-bottom: 16px;
+        flex-wrap: wrap;
+
+        mat-form-field {
+          flex: 1;
+          min-width: 200px;
+
+          &.recipients-field {
+            flex: 2;
+            min-width: 300px;
+          }
+        }
+
+        mat-checkbox {
+          margin-top: 8px;
+        }
+      }
+
+      .form-actions {
+        display: flex;
+        gap: 12px;
+        align-items: center;
+        margin-top: 24px;
+        padding-top: 16px;
+        border-top: 1px solid #e0e0e0;
+      }
+    }
+  }
+
+  .reports-list-card {
+    .empty-state {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      padding: 48px 24px;
+
+      mat-icon {
+        font-size: 64px;
+        width: 64px;
+        height: 64px;
+        color: #ccc;
+        margin-bottom: 16px;
+      }
+
+      h3 {
+        margin: 0 0 8px 0;
+        color: #333;
+        font-weight: 500;
+      }
+
+      p {
+        margin: 0;
+        color: #666;
+        font-size: 16px;
+      }
+    }
+
+    .reports-table {
+      width: 100%;
+      margin-top: 16px;
+
+      .mat-mdc-header-cell {
+        font-weight: 600;
+        color: #333;
+      }
+
+      .mat-mdc-cell {
+        padding: 16px 12px;
+        border-bottom: 1px solid #e0e0e0;
+
+        .schedule-info {
+          .schedule-text {
+            font-weight: 500;
+            color: #333;
+            margin-bottom: 4px;
+          }
+
+          .schedule-badge {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 500;
+            text-transform: uppercase;
+
+            &.daily {
+              background-color: #e3f2fd;
+              color: #1976d2;
+            }
+
+            &.weekly {
+              background-color: #e8f5e8;
+              color: #4caf50;
+            }
+
+            &.monthly {
+              background-color: #fff3e0;
+              color: #ff9800;
+            }
+          }
+        }
+
+        .time-info {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          color: #666;
+
+          mat-icon {
+            font-size: 18px;
+            width: 18px;
+            height: 18px;
+          }
+        }
+
+        .recipients-info {
+          mat-chip-listbox {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 4px;
+
+            mat-chip {
+              font-size: 12px;
+              height: 28px;
+
+              mat-icon {
+                font-size: 16px;
+                width: 16px;
+                height: 16px;
+              }
+            }
+          }
+        }
+
+        .status-info {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+
+          mat-icon {
+            font-size: 20px;
+            width: 20px;
+            height: 20px;
+
+            &.enabled {
+              color: #4caf50;
+            }
+
+            &.disabled {
+              color: #f44336;
+            }
+          }
+
+          .status-text {
+            font-weight: 500;
+          }
+        }
+
+        .actions {
+          display: flex;
+          gap: 4px;
+
+          button {
+            mat-icon {
+              font-size: 18px;
+              width: 18px;
+              height: 18px;
+            }
+          }
+        }
+      }
+
+      .mat-mdc-row:hover {
+        background-color: #f9f9f9;
+      }
+    }
+  }
+}
+
+// Responsive design
+@media (max-width: 768px) {
+  .scheduled-reports {
+    padding: 16px;
+
+    .form-card {
+      .report-form {
+        .form-row {
+          flex-direction: column;
+
+          mat-form-field {
+            min-width: unset;
+            width: 100%;
+
+            &.recipients-field {
+              min-width: unset;
+            }
+          }
+        }
+
+        .form-actions {
+          flex-direction: column;
+          align-items: stretch;
+
+          button {
+            width: 100%;
+          }
+        }
+      }
+    }
+
+    .reports-list-card {
+      .reports-table {
+        .mat-mdc-cell {
+          padding: 12px 8px;
+
+          .recipients-info {
+            mat-chip-listbox {
+              mat-chip {
+                font-size: 11px;
+                height: 24px;
+              }
+            }
+          }
+
+          .actions {
+            flex-direction: column;
+            gap: 2px;
+
+            button {
+              width: 100%;
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
+@media (max-width: 480px) {
+  .scheduled-reports {
+    padding: 12px;
+
+    .header {
+      h2 {
+        font-size: 24px;
+
+        mat-icon {
+          font-size: 28px;
+          width: 28px;
+          height: 28px;
+        }
+      }
+
+      .subtitle {
+        font-size: 14px;
+      }
+    }
+
+    .reports-list-card {
+      .reports-table {
+        font-size: 14px;
+
+        .mat-mdc-cell {
+          padding: 8px 4px;
+
+          .schedule-info {
+            .schedule-text {
+              font-size: 13px;
+            }
+
+            .schedule-badge {
+              font-size: 10px;
+            }
+          }
+
+          .time-info {
+            font-size: 13px;
+
+            mat-icon {
+              font-size: 16px;
+              width: 16px;
+              height: 16px;
+            }
+          }
+        }
+      }
+    }
+  }
+}

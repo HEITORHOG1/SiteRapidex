@@ -2,6 +2,7 @@ import { TestBed } from '@angular/core/testing';
 import { of, throwError } from 'rxjs';
 import { CategoryStateService } from './category-state.service';
 import { CategoryHttpService } from './category-http.service';
+import { CategoryCacheService } from './category-cache.service';
 import { 
   Category, 
   CategoryFilters, 
@@ -57,10 +58,24 @@ describe('CategoryStateService', () => {
       'searchCategories'
     ]);
 
+    const categoryCacheSpy = jasmine.createSpyObj('CategoryCacheService', [
+      'getCategoryList',
+      'setCategoryList',
+      'getCategory',
+      'setCategory',
+      'getSearchResults',
+      'setSearchResults',
+      'invalidateCategoryCache',
+      'invalidateCategory',
+      'invalidateByPattern',
+      'intelligentWarmup'
+    ]);
+
     TestBed.configureTestingModule({
       providers: [
         CategoryStateService,
-        { provide: CategoryHttpService, useValue: categoryHttpServiceSpy }
+        { provide: CategoryHttpService, useValue: categoryHttpServiceSpy },
+        { provide: CategoryCacheService, useValue: categoryCacheSpy }
       ]
     });
 
@@ -588,6 +603,285 @@ describe('CategoryStateService', () => {
     });
   });
 
+  describe('Cache Integration', () => {
+    beforeEach(() => {
+      service.setEstablishmentContext(1);
+    });
+
+    it('should use cached data when available', (done) => {
+      const categoryCache = TestBed.inject(CategoryCacheService) as jasmine.SpyObj<CategoryCacheService>;
+      categoryCache.getCategoryList.and.returnValue(mockCategories);
+
+      service.loadCategories().subscribe(response => {
+        expect(response.categorias).toEqual(mockCategories);
+        expect(categoryHttpService.getCategories).not.toHaveBeenCalled();
+        done();
+      });
+    });
+
+    it('should cache data after successful load', (done) => {
+      const categoryCache = TestBed.inject(CategoryCacheService) as jasmine.SpyObj<CategoryCacheService>;
+      categoryCache.getCategoryList.and.returnValue(null);
+      categoryHttpService.getCategories.and.returnValue(of(mockCategoryListResponse));
+
+      service.loadCategories().subscribe(() => {
+        expect(categoryCache.setCategoryList).toHaveBeenCalledWith(1, mockCategories, jasmine.any(Object));
+        expect(categoryCache.intelligentWarmup).toHaveBeenCalledWith(1, mockCategories);
+        done();
+      });
+    });
+
+    it('should use cached category for selection', (done) => {
+      const categoryCache = TestBed.inject(CategoryCacheService) as jasmine.SpyObj<CategoryCacheService>;
+      categoryCache.getCategory.and.returnValue(mockCategories[0]);
+
+      service.selectCategory(1).subscribe(category => {
+        expect(category).toEqual(mockCategories[0]);
+        expect(categoryHttpService.getCategoryById).not.toHaveBeenCalled();
+        done();
+      });
+    });
+
+    it('should cache category after fetching', (done) => {
+      const categoryCache = TestBed.inject(CategoryCacheService) as jasmine.SpyObj<CategoryCacheService>;
+      categoryCache.getCategory.and.returnValue(null);
+      categoryHttpService.getCategoryById.and.returnValue(of(mockCategories[0]));
+
+      service.selectCategory(1).subscribe(() => {
+        expect(categoryCache.setCategory).toHaveBeenCalledWith(1, mockCategories[0]);
+        done();
+      });
+    });
+
+    it('should use cached search results', (done) => {
+      const categoryCache = TestBed.inject(CategoryCacheService) as jasmine.SpyObj<CategoryCacheService>;
+      const searchResults = [mockCategories[0]];
+      categoryCache.getSearchResults.and.returnValue(searchResults);
+
+      service.searchCategories('bebidas').subscribe(results => {
+        expect(results).toEqual(searchResults);
+        expect(categoryHttpService.searchCategories).not.toHaveBeenCalled();
+        done();
+      });
+    });
+
+    it('should cache search results after fetching', (done) => {
+      const categoryCache = TestBed.inject(CategoryCacheService) as jasmine.SpyObj<CategoryCacheService>;
+      const searchResults = [mockCategories[0]];
+      categoryCache.getSearchResults.and.returnValue(null);
+      categoryHttpService.searchCategories.and.returnValue(of(searchResults));
+
+      service.searchCategories('bebidas').subscribe(() => {
+        expect(categoryCache.setSearchResults).toHaveBeenCalledWith(1, 'bebidas', searchResults);
+        done();
+      });
+    });
+
+    it('should invalidate cache after create', (done) => {
+      const categoryCache = TestBed.inject(CategoryCacheService) as jasmine.SpyObj<CategoryCacheService>;
+      const createRequest: CreateCategoryRequest = {
+        nome: 'Nova Categoria',
+        descricao: 'Descrição'
+      };
+      const createdCategory = { ...mockCategories[0], id: 3, nome: 'Nova Categoria' };
+      
+      categoryHttpService.createCategory.and.returnValue(of(createdCategory));
+
+      service.createCategory(createRequest).subscribe(() => {
+        expect(categoryCache.invalidateCategoryCache).toHaveBeenCalledWith(1);
+        expect(categoryCache.setCategory).toHaveBeenCalledWith(1, createdCategory);
+        done();
+      });
+    });
+
+    it('should invalidate cache after update', (done) => {
+      const categoryCache = TestBed.inject(CategoryCacheService) as jasmine.SpyObj<CategoryCacheService>;
+      categoryHttpService.getCategories.and.returnValue(of(mockCategoryListResponse));
+      
+      service.loadCategories().subscribe(() => {
+        const updateRequest: UpdateCategoryRequest = {
+          nome: 'Bebidas Atualizadas',
+          descricao: 'Descrição atualizada',
+          ativo: false
+        };
+        const updatedCategory = { ...mockCategories[0], ...updateRequest };
+        
+        categoryHttpService.updateCategory.and.returnValue(of(updatedCategory));
+
+        service.updateCategory(1, updateRequest).subscribe(() => {
+          expect(categoryCache.setCategory).toHaveBeenCalledWith(1, updatedCategory);
+          expect(categoryCache.invalidateByPattern).toHaveBeenCalled();
+          done();
+        });
+      });
+    });
+
+    it('should invalidate cache after delete', (done) => {
+      const categoryCache = TestBed.inject(CategoryCacheService) as jasmine.SpyObj<CategoryCacheService>;
+      categoryHttpService.getCategories.and.returnValue(of(mockCategoryListResponse));
+      
+      service.loadCategories().subscribe(() => {
+        categoryHttpService.deleteCategory.and.returnValue(of(void 0));
+
+        service.deleteCategory(1).subscribe(() => {
+          expect(categoryCache.invalidateCategory).toHaveBeenCalledWith(1, 1);
+          done();
+        });
+      });
+    });
+  });
+
+  describe('Advanced State Management', () => {
+    beforeEach(() => {
+      service.setEstablishmentContext(1);
+    });
+
+    it('should handle concurrent operations gracefully', (done) => {
+      categoryHttpService.getCategories.and.returnValue(of(mockCategoryListResponse));
+      categoryHttpService.getCategoryById.and.returnValue(of(mockCategories[0]));
+
+      // Start multiple operations concurrently
+      const load$ = service.loadCategories();
+      const select$ = service.selectCategory(1);
+
+      // Both should complete successfully
+      Promise.all([
+        load$.toPromise(),
+        select$.toPromise()
+      ]).then(() => {
+        service.state$.subscribe(state => {
+          expect(state.categories).toEqual(mockCategories);
+          expect(state.selectedCategory).toEqual(mockCategories[0]);
+          done();
+        });
+      });
+    });
+
+    it('should maintain state consistency during rapid updates', (done) => {
+      categoryHttpService.getCategories.and.returnValue(of(mockCategoryListResponse));
+      
+      service.loadCategories().subscribe(() => {
+        // Rapid filter updates
+        service.updateFilters({ search: 'bebidas' });
+        service.updateFilters({ ativo: true });
+        service.updateFilters({ sortBy: 'dataCriacao' });
+
+        service.filteredCategories$.subscribe(filtered => {
+          // Should apply all filters
+          expect(filtered.length).toBeLessThanOrEqual(mockCategories.length);
+          done();
+        });
+      });
+    });
+
+    it('should handle establishment context changes during operations', (done) => {
+      categoryHttpService.getCategories.and.returnValue(of(mockCategoryListResponse));
+      
+      service.loadCategories().subscribe(() => {
+        // Change establishment context during operation
+        service.setEstablishmentContext(2);
+        
+        service.state$.subscribe(state => {
+          // State should be cleared
+          expect(state.categories).toEqual([]);
+          expect(state.selectedCategory).toBeNull();
+          done();
+        });
+      });
+    });
+  });
+
+  describe('Error Recovery', () => {
+    beforeEach(() => {
+      service.setEstablishmentContext(1);
+    });
+
+    it('should recover from network errors', (done) => {
+      // First call fails
+      categoryHttpService.getCategories.and.returnValue(throwError(() => ({ message: 'Network error' })));
+      
+      service.loadCategories().subscribe({
+        complete: () => {
+          // Second call succeeds
+          categoryHttpService.getCategories.and.returnValue(of(mockCategoryListResponse));
+          
+          service.reloadCategories().subscribe(() => {
+            service.categories$.subscribe(categories => {
+              expect(categories).toEqual(mockCategories);
+              done();
+            });
+          });
+        }
+      });
+    });
+
+    it('should handle partial failures in optimistic updates', (done) => {
+      categoryHttpService.getCategories.and.returnValue(of(mockCategoryListResponse));
+      
+      service.loadCategories().subscribe(() => {
+        const createRequest: CreateCategoryRequest = {
+          nome: 'Nova Categoria',
+          descricao: 'Descrição'
+        };
+        
+        // Create fails after optimistic update
+        categoryHttpService.createCategory.and.returnValue(throwError(() => ({ message: 'Server error' })));
+
+        let categoryUpdates: Category[][] = [];
+        service.categories$.subscribe(categories => categoryUpdates.push([...categories]));
+
+        service.createCategory(createRequest).subscribe({
+          complete: () => {
+            // Should revert to original state
+            const finalCategories = categoryUpdates[categoryUpdates.length - 1];
+            expect(finalCategories).toEqual(mockCategories);
+            done();
+          }
+        });
+      });
+    });
+  });
+
+  describe('Performance Optimizations', () => {
+    beforeEach(() => {
+      service.setEstablishmentContext(1);
+    });
+
+    it('should debounce rapid filter changes', (done) => {
+      categoryHttpService.getCategories.and.returnValue(of(mockCategoryListResponse));
+      
+      service.loadCategories().subscribe(() => {
+        categoryHttpService.getCategories.calls.reset();
+        
+        // Rapid filter changes
+        service.updateFilters({ search: 'a' });
+        service.updateFilters({ search: 'ab' });
+        service.updateFilters({ search: 'abc' });
+
+        setTimeout(() => {
+          // Should only make one API call for the final filter
+          expect(categoryHttpService.getCategories).toHaveBeenCalledTimes(1);
+          done();
+        }, 100);
+      });
+    });
+
+    it('should avoid unnecessary API calls for cached data', (done) => {
+      const categoryCache = TestBed.inject(CategoryCacheService) as jasmine.SpyObj<CategoryCacheService>;
+      categoryCache.getCategoryList.and.returnValue(mockCategories);
+
+      // Multiple loads should only hit cache
+      service.loadCategories().subscribe(() => {
+        service.loadCategories().subscribe(() => {
+          service.loadCategories().subscribe(() => {
+            expect(categoryHttpService.getCategories).not.toHaveBeenCalled();
+            done();
+          });
+        });
+      });
+    });
+  });
+
   describe('Error Handling', () => {
     it('should extract error message from error object', () => {
       const errorWithMessage = { message: 'Custom error' };
@@ -605,6 +899,11 @@ describe('CategoryStateService', () => {
       const unknownError = { someProperty: 'value' };
       const result = service['extractErrorMessage'](unknownError);
       expect(result).toBe('Erro desconhecido');
+    });
+
+    it('should handle null/undefined errors', () => {
+      expect(service['extractErrorMessage'](null)).toBe('Erro desconhecido');
+      expect(service['extractErrorMessage'](undefined)).toBe('Erro desconhecido');
     });
   });
 });

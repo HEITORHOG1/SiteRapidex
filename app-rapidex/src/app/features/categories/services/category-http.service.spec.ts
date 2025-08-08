@@ -1,17 +1,28 @@
 import { TestBed } from '@angular/core/testing';
 import { HttpClientTestingModule, HttpTestingController } from '@angular/common/http/testing';
 import { CategoryHttpService } from './category-http.service';
+import { CategoryOfflineStorageService } from './category-offline-storage.service';
+import { CategoryServiceWorkerRegistrationService } from './category-sw-registration.service';
 import { ApiConfigService } from '../../../core/services/api-config.service';
 import { 
   Category, 
-  CategoryListParams,
+  CategoryListParams
+} from '../models/category.models';
+import {
   CreateCategoryRequest,
   UpdateCategoryRequest,
   CategoryListResponse,
   CategoryDetailResponse,
   CategoryValidationResponse,
-  CategoryDeletionValidationResponse
-} from '../models';
+  CategoryDeletionValidationResponse,
+  CategoryDeletionRequest,
+  CategoryDeletionResponse,
+  BulkCategoryDeletionRequest,
+  BulkCategoryDeletionResponse,
+  UndoCategoryDeletionRequest,
+  UndoCategoryDeletionResponse,
+  CategoryDeletionAuditEntry
+} from '../models/category-dto.models';
 import { ErrorCodes } from '../../../data-access/models/auth.models';
 
 describe('CategoryHttpService', () => {
@@ -36,12 +47,20 @@ describe('CategoryHttpService', () => {
 
   beforeEach(() => {
     const apiConfigSpy = jasmine.createSpyObj('ApiConfigService', ['getConfiguredEndpoint', 'getBaseUrl']);
+    const offlineStorageSpy = jasmine.createSpyObj('CategoryOfflineStorageService', [
+      'cacheCategories', 'getCachedCategories', 'addOfflineOperation'
+    ]);
+    const swRegistrationSpy = jasmine.createSpyObj('CategoryServiceWorkerRegistrationService', [
+      'cacheCategoryData', 'registerBackgroundSync'
+    ]);
 
     TestBed.configureTestingModule({
       imports: [HttpClientTestingModule],
       providers: [
         CategoryHttpService,
-        { provide: ApiConfigService, useValue: apiConfigSpy }
+        { provide: ApiConfigService, useValue: apiConfigSpy },
+        { provide: CategoryOfflineStorageService, useValue: offlineStorageSpy },
+        { provide: CategoryServiceWorkerRegistrationService, useValue: swRegistrationSpy }
       ]
     });
 
@@ -359,6 +378,236 @@ describe('CategoryHttpService', () => {
     });
   });
 
+  describe('deleteCategoryEnhanced', () => {
+    it('should delete category with enhanced options', () => {
+      const deleteRequest: CategoryDeletionRequest = {
+        categoryId: mockCategoryId,
+        deletionType: 'soft',
+        moveProductsToCategory: 2,
+        reason: 'Categoria não utilizada'
+      };
+
+      const mockResponse: CategoryDeletionResponse = {
+        success: true,
+        deletionType: 'soft',
+        affectedProductsCount: 3,
+        movedProductsCount: 3,
+        targetCategoryId: 2,
+        canUndo: true,
+        undoToken: 'undo-token-123',
+        undoExpiresAt: new Date()
+      };
+
+      apiConfigService.getConfiguredEndpoint.and.returnValue(`${baseUrl}/api/categorias/estabelecimentos/${mockEstablecimentoId}/categorias/${mockCategoryId}/delete-enhanced`);
+
+      service.deleteCategoryEnhanced(mockEstablecimentoId, deleteRequest).subscribe(response => {
+        expect(response).toEqual(mockResponse);
+      });
+
+      const req = httpMock.expectOne(`${baseUrl}/api/categorias/estabelecimentos/${mockEstablecimentoId}/categorias/${mockCategoryId}/delete-enhanced`);
+      expect(req.request.method).toBe('POST');
+      expect(req.request.body).toEqual(deleteRequest);
+      req.flush(mockResponse);
+    });
+  });
+
+  describe('deleteBulkCategories', () => {
+    it('should delete multiple categories in bulk', () => {
+      const bulkRequest: BulkCategoryDeletionRequest = {
+        categoryIds: [1, 2, 3],
+        deletionType: 'hard',
+        reason: 'Limpeza de categorias'
+      };
+
+      const mockResponse: BulkCategoryDeletionResponse = {
+        totalRequested: 3,
+        successfulDeletions: 2,
+        failedDeletions: 1,
+        deletionResults: [],
+        errors: [{
+          categoryId: 3,
+          categoryName: 'Categoria com produtos',
+          error: 'Categoria possui produtos ativos'
+        }]
+      };
+
+      apiConfigService.getConfiguredEndpoint.and.returnValue(`${baseUrl}/api/categorias/estabelecimentos/${mockEstablecimentoId}/categorias/bulk-delete`);
+
+      service.deleteBulkCategories(mockEstablecimentoId, bulkRequest).subscribe(response => {
+        expect(response).toEqual(mockResponse);
+      });
+
+      const req = httpMock.expectOne(`${baseUrl}/api/categorias/estabelecimentos/${mockEstablecimentoId}/categorias/bulk-delete`);
+      expect(req.request.method).toBe('POST');
+      expect(req.request.body).toEqual(bulkRequest);
+      req.flush(mockResponse);
+    });
+
+    it('should throw error for empty category list', () => {
+      const bulkRequest: BulkCategoryDeletionRequest = {
+        categoryIds: [],
+        deletionType: 'hard'
+      };
+
+      service.deleteBulkCategories(mockEstablecimentoId, bulkRequest).subscribe({
+        error: (error) => {
+          expect(error.message).toBe('Lista de categorias é obrigatória');
+        }
+      });
+    });
+  });
+
+  describe('undoCategoryDeletion', () => {
+    it('should undo category deletion', () => {
+      const undoRequest: UndoCategoryDeletionRequest = {
+        undoToken: 'undo-token-123'
+      };
+
+      const mockResponse: UndoCategoryDeletionResponse = {
+        success: true,
+        restoredCategory: mockCategory,
+        restoredProductsCount: 3
+      };
+
+      apiConfigService.getConfiguredEndpoint.and.returnValue(`${baseUrl}/api/categorias/undo-deletion`);
+
+      service.undoCategoryDeletion(undoRequest).subscribe(response => {
+        expect(response).toEqual(mockResponse);
+      });
+
+      const req = httpMock.expectOne(`${baseUrl}/api/categorias/undo-deletion`);
+      expect(req.request.method).toBe('POST');
+      expect(req.request.body).toEqual(undoRequest);
+      req.flush(mockResponse);
+    });
+
+    it('should throw error for missing undo token', () => {
+      const undoRequest: UndoCategoryDeletionRequest = {
+        undoToken: ''
+      };
+
+      service.undoCategoryDeletion(undoRequest).subscribe({
+        error: (error) => {
+          expect(error.message).toBe('Token de desfazer é obrigatório');
+        }
+      });
+    });
+  });
+
+  describe('getCategoryDeletionAuditTrail', () => {
+    it('should get deletion audit trail', () => {
+      const mockAuditEntries: CategoryDeletionAuditEntry[] = [
+        {
+          id: 1,
+          categoryId: 1,
+          categoryName: 'Bebidas',
+          estabelecimentoId: mockEstablecimentoId,
+          deletionType: 'soft',
+          deletedBy: 1,
+          deletedByName: 'João Silva',
+          deletedAt: new Date(),
+          affectedProductsCount: 3,
+          canUndo: true
+        }
+      ];
+
+      apiConfigService.getConfiguredEndpoint.and.returnValue(`${baseUrl}/api/categorias/estabelecimentos/${mockEstablecimentoId}/audit-trail`);
+
+      service.getCategoryDeletionAuditTrail(mockEstablecimentoId, 25).subscribe(entries => {
+        expect(entries).toEqual(mockAuditEntries);
+      });
+
+      const req = httpMock.expectOne(req => 
+        req.url.includes(`/api/categorias/estabelecimentos/${mockEstablecimentoId}/audit-trail`) &&
+        req.params.get('limit') === '25'
+      );
+      expect(req.request.method).toBe('GET');
+      req.flush(mockAuditEntries);
+    });
+  });
+
+  describe('offline support', () => {
+    beforeEach(() => {
+      // Mock navigator.onLine
+      Object.defineProperty(navigator, 'onLine', {
+        writable: true,
+        value: false
+      });
+    });
+
+    it('should return cached data when offline and request fails', () => {
+      const offlineStorage = TestBed.inject(CategoryOfflineStorageService) as jasmine.SpyObj<CategoryOfflineStorageService>;
+      offlineStorage.getCachedCategories.and.returnValue([mockCategory]);
+
+      service.getCategories(mockEstablecimentoId).subscribe(response => {
+        expect(response.categorias).toEqual([mockCategory]);
+        expect(response.total).toBe(1);
+      });
+
+      const req = httpMock.expectOne(`${baseUrl}/api/categorias/estabelecimentos/${mockEstablecimentoId}/categorias`);
+      req.error(new ProgressEvent('Network error'), { status: 0 });
+    });
+
+    it('should queue create operation when offline', () => {
+      const createRequest: CreateCategoryRequest = {
+        nome: 'Bebidas',
+        descricao: 'Categoria de bebidas'
+      };
+
+      const offlineStorage = TestBed.inject(CategoryOfflineStorageService) as jasmine.SpyObj<CategoryOfflineStorageService>;
+      const swRegistration = TestBed.inject(CategoryServiceWorkerRegistrationService) as jasmine.SpyObj<CategoryServiceWorkerRegistrationService>;
+
+      service.createCategory(mockEstablecimentoId, createRequest).subscribe(category => {
+        expect(category.id).toBeLessThan(0); // Temporary ID
+        expect(category.nome).toBe(createRequest.nome);
+        expect(offlineStorage.addOfflineOperation).toHaveBeenCalled();
+        expect(swRegistration.registerBackgroundSync).toHaveBeenCalledWith('category-sync');
+      });
+
+      const req = httpMock.expectOne(`${baseUrl}/api/categorias/estabelecimentos/${mockEstablecimentoId}/categorias`);
+      req.error(new ProgressEvent('Network error'), { status: 0 });
+    });
+  });
+
+  describe('data sanitization', () => {
+    it('should sanitize malicious input in create request', () => {
+      const maliciousRequest: CreateCategoryRequest = {
+        nome: '<script>alert("xss")</script>Bebidas<img src=x onerror=alert(1)>',
+        descricao: 'javascript:alert("xss") Descrição com <script>alert("xss")</script> script'
+      };
+
+      service.createCategory(mockEstablecimentoId, maliciousRequest).subscribe();
+
+      const req = httpMock.expectOne(`${baseUrl}/api/categorias/estabelecimentos/${mockEstablecimentoId}/categorias`);
+      const sanitizedBody = req.request.body as CreateCategoryRequest;
+      
+      expect(sanitizedBody.nome).not.toContain('<script>');
+      expect(sanitizedBody.nome).not.toContain('onerror');
+      expect(sanitizedBody.descricao).not.toContain('javascript:');
+      expect(sanitizedBody.descricao).not.toContain('<script>');
+      
+      req.flush(mockCategory);
+    });
+
+    it('should sanitize malicious input in update request', () => {
+      const maliciousRequest: UpdateCategoryRequest = {
+        nome: '<script>alert("xss")</script>Bebidas',
+        descricao: 'Descrição com <img src=x onerror=alert(1)> imagem',
+        ativo: true
+      };
+
+      service.updateCategory(mockEstablecimentoId, mockCategoryId, maliciousRequest).subscribe();
+
+      const req = httpMock.expectOne(`${baseUrl}/api/categorias/estabelecimentos/${mockEstablecimentoId}/categorias/${mockCategoryId}`);
+      const sanitizedBody = req.request.body as UpdateCategoryRequest;
+      
+      expect(sanitizedBody.nome).not.toContain('<script>');
+      expect(sanitizedBody.descricao).not.toContain('onerror');
+      
+      req.flush(mockCategory);
+    });
+  });
+
   describe('error handling', () => {
     it('should handle 404 errors', () => {
       service.getCategoryById(mockEstablecimentoId, mockCategoryId).subscribe({
@@ -423,6 +672,23 @@ describe('CategoryHttpService', () => {
 
       const req = httpMock.expectOne(`${baseUrl}/api/categorias/estabelecimentos/${mockEstablecimentoId}/categorias`);
       req.flush({ message: 'Internal Server Error' }, { status: 500, statusText: 'Internal Server Error' });
+    });
+
+    it('should handle 422 validation errors', () => {
+      const createRequest: CreateCategoryRequest = {
+        nome: '',
+        descricao: 'Descrição'
+      };
+
+      service.createCategory(mockEstablecimentoId, createRequest).subscribe({
+        error: (error) => {
+          expect(error.code).toBe(ErrorCodes.VALIDATION_ERROR);
+          expect(error.message).toBe('Erro de validação');
+        }
+      });
+
+      const req = httpMock.expectOne(`${baseUrl}/api/categorias/estabelecimentos/${mockEstablecimentoId}/categorias`);
+      req.flush({ message: 'Validation failed' }, { status: 422, statusText: 'Unprocessable Entity' });
     });
   });
 });
