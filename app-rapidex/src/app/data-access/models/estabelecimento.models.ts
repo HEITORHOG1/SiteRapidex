@@ -1,3 +1,5 @@
+import { ApiResponse } from './api-response.models';
+
 export interface Estabelecimento {
   id: number;
   usuarioId: string;
@@ -27,3 +29,10 @@ export interface EstabelecimentoListParams {
   page?: number;
   limit?: number;
 }
+
+// API Response Wrappers for new API format
+export type EstabelecimentoApiResponse = ApiResponse<Estabelecimento>;
+export type EstabelecimentoListApiResponse = ApiResponse<EstabelecimentoResponse>;
+export type EstabelecimentoCreateApiResponse = ApiResponse<Estabelecimento>;
+export type EstabelecimentoUpdateApiResponse = ApiResponse<Estabelecimento>;
+export type EstabelecimentoDeleteApiResponse = ApiResponse<{ id: number }>;

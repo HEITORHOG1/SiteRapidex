@@ -58,10 +58,9 @@ export interface VirtualScrollConfig {
           
           <app-category-card
             [category]="category"
-            [loading]="false"
             (edit)="onEdit($event)"
             (delete)="onDelete($event)"
-            (view)="onView($event)">
+            (viewDetails)="onView($event)">
           </app-category-card>
         </div>
 

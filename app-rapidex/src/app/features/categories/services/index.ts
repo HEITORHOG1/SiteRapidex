@@ -1,15 +1,6 @@
 // Category services exports
 export { CategoryHttpService } from './category-http.service';
 export { CategoryStateService } from './category-state.service';
-export { CategoryCacheService, CachePriority, type CacheStats, type CacheConfig } from './category-cache.service';
-export { CategoryCacheMetricsService, type CachePerformanceMetrics } from './category-cache-metrics.service';
-export { 
-  CategoryCacheConfigService, 
-  type CategoryCacheConfiguration,
-  DEFAULT_CACHE_CONFIG,
-  CACHE_CONFIG_PROFILES,
-  CATEGORY_CACHE_CONFIG 
-} from './category-cache-config.service';
 export { 
   CategorySearchService, 
   type SearchSuggestion, 
@@ -25,11 +16,7 @@ export { CategoryAnalyticsService } from './category-analytics.service';
 export { CategoryChartService } from './category-chart.service';
 export { CategoryExportService } from './category-export.service';
 export { CategoryImportService } from './category-import.service';
-export { CategoryOfflineStorageService, type OfflineCategoryOperation, type OfflineCategoryData } from './category-offline-storage.service';
-export { CategoryOfflineSyncService, type SyncStatus } from './category-offline-sync.service';
-export { CategoryOfflineService } from './category-offline.service';
 export { CategoryConflictResolutionService, type ConflictResolution, type CategoryConflict } from './category-conflict-resolution.service';
-export { CategoryServiceWorkerRegistrationService, type ServiceWorkerStatus } from './category-sw-registration.service';
 export { CategoryAccessibilityService, type AccessibilitySettings, type FocusableElement } from './category-accessibility.service';
 export { 
   CategoryAccessibilityTestingService, 
@@ -39,8 +26,9 @@ export {
 } from './category-accessibility-testing.service';
 
 // Help and Documentation Services
-export { CategoryHelpService, type HelpContent, type TourStep } from './category-help.service';//
- Monitoring and Logging Services
+export { CategoryHelpService, type HelpContent, type TourStep } from './category-help.service';
+
+// Monitoring and Logging Services
 export { CategoryLoggerService, type LogEntry, type LogMetrics } from './category-logger.service';
 export { CategoryErrorTrackerService, type ErrorReport, type ErrorMetrics } from './category-error-tracker.service';
 export { CategoryPerformanceMonitorService, type PerformanceMetric, type PerformanceDashboard } from './category-performance-monitor.service';

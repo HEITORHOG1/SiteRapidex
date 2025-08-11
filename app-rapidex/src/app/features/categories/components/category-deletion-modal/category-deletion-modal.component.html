@@ -275,7 +275,7 @@
             
             <div class="summary-item" *ngIf="deletionForm.get('moveProductsToCategory')?.value">
               <strong>Mover produtos para:</strong>
-              {{ impactAnalysis()!.alternativeCategories.find(c => c.id == deletionForm.get('moveProductsToCategory')?.value)?.nome }}
+              {{ getSelectedCategoryName() }}
             </div>
             
             <div class="summary-item" *ngIf="deletionForm.get('reason')?.value">

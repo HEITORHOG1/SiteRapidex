@@ -130,7 +130,8 @@ export class BulkDeletionModalComponent implements OnInit, OnDestroy {
     });
   }
 
-  private loadImpactAnalyses(): void {
+  // Tornado público para template
+  loadImpactAnalyses(): void {
     if (!this.categories.length || !this.estabelecimentoId) return;
 
     this.loading.set(true);
@@ -144,17 +145,12 @@ export class BulkDeletionModalComponent implements OnInit, OnDestroy {
       next: (analyses) => {
         this.impactAnalyses.set(analyses);
         this.loading.set(false);
-        
-        // Set default deletion type based on analysis
         const hasProductsWithoutAlternatives = analyses.some(a => 
           a.hasProducts && (!a.canDelete || a.alternativeCategories.length === 0)
         );
-        
         if (hasProductsWithoutAlternatives) {
           this.bulkDeletionForm.patchValue({ deletionType: 'soft' });
         }
-
-        // Move to next step
         this.currentStep.set('options');
       },
       error: (error) => {
@@ -350,5 +346,17 @@ export class BulkDeletionModalComponent implements OnInit, OnDestroy {
 
   getBlockedCategories(): DeletionImpactAnalysis[] {
     return this.impactAnalyses().filter(analysis => !analysis.canDelete);
+  }
+
+  getSelectedAlternativeCategoryName(): string {
+    const selectedId = this.bulkDeletionForm?.get('moveProductsToCategory')?.value;
+    if (!selectedId) return '';
+    
+    const category = this.allAlternativeCategories().find(c => c.id === selectedId);
+    return category?.nome || '';
+  }
+
+  getCategoryImpact(categoryId: number): DeletionImpactAnalysis | null {
+    return this.impactAnalyses().find(a => a.category.id === categoryId) || null;
   }
 }

@@ -1,5 +1,6 @@
-@import '../../../../styles/tokens';
-@import '../../../../styles/mixins';
+@use 'sass:color';
+@use '../../../../styles/tokens' as *;
+@use '../../../../styles/mixins' as *;
 
 :host {
   display: block;
@@ -174,7 +175,7 @@
     @include flex-center;
     gap: $spacing-sm;
     padding: 14px $spacing-lg;
-    background: linear-gradient(135deg, $primary-color 0%, darken($primary-color, 10%) 100%);
+    background: linear-gradient(135deg, $primary-color 0%, color.adjust($primary-color, $lightness: -10%) 100%);
     color: $white;
     border: none;
     border-radius: $border-radius-lg;
@@ -186,7 +187,7 @@
     outline: none;
     
     &:hover:not(:disabled) {
-      background: linear-gradient(135deg, darken($primary-color, 5%) 0%, darken($primary-color, 15%) 100%);
+      background: linear-gradient(135deg, color.adjust($primary-color, $lightness: -5%) 0%, color.adjust($primary-color, $lightness: -15%) 100%);
       transform: translateY(-1px);
       box-shadow: $shadow-md;
     }
@@ -237,7 +238,7 @@
     transition: color $transition-fast;
     
     &:hover {
-      color: darken($primary-color, 10%);
+      color: color.adjust($primary-color, $lightness: -10%);
       text-decoration: underline;
     }
     

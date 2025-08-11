@@ -739,9 +739,9 @@ import { Subject, takeUntil } from 'rxjs';
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class HelpModalComponent implements OnInit, OnDestroy {
-  private isVisible = signal(false);
-  private activeTab = signal('overview');
-  private searchResults = signal<HelpContent[]>([]);
+  protected isVisible = signal(false);
+  protected activeTab = signal('overview');
+  protected searchResults = signal<HelpContent[]>([]);
   private destroy$ = new Subject<void>();
 
   searchQuery = '';

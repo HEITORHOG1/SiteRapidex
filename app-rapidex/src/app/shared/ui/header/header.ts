@@ -7,23 +7,17 @@ import { AuthService } from "@core/services/auth.service";
   selector: "rx-header",
   standalone: true,
   imports: [CommonModule, RouterLink],
-  template: `
-  <header class="topbar">
-    <a routerLink="/">Rapidex</a>
-    <nav>
-      <a routerLink="/dashboard">Dashboard</a>
-      <a routerLink="/auth/login" *ngIf="!isAuth()">Login</a>
-      <span *ngIf="isAuth()">{{ displayName() }} ({{ role() }})</span>
-      <button *ngIf="isAuth()" (click)="logout()">Sair</button>
-    </nav>
-  </header>
-  `,
-  styles: [`.topbar{display:flex;justify-content:space-between;padding:8px 16px;border-bottom:1px solid #ddd}`]
+  templateUrl: "./header.html",
+  styleUrls: ["./header.scss"]
 })
 export class HeaderBarComponent {
   private auth = inject(AuthService);
-  isAuth = () => this.auth.isAuthenticated();
+  
+  isAuth = computed(() => this.auth.isAuthenticated());
   displayName = computed(() => this.auth.user()?.nomeUsuario || this.auth.user()?.userName || "Usuário");
-  role = () => (this.auth.roles()[0] || "");
-  logout(){ this.auth.logout(); }
+  role = computed(() => this.auth.roles()[0] || "");
+  
+  logout() { 
+    this.auth.logout(); 
+  }
 }

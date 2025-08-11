@@ -38,7 +38,7 @@ import { Estabelecimento } from '../../../data-access/models/estabelecimento.mod
         <div class="demo-column">
           <rx-error-message 
             type="error" 
-            message="Erro ao carregar dados. Verifique sua conexão."
+            message="Sem conexão com a internet. A aplicação requer conexão para funcionar."
             [showRetry]="true"
             [dismissible]="true"
             (retry)="onRetry()"
@@ -121,7 +121,7 @@ import { Estabelecimento } from '../../../data-access/models/estabelecimento.mod
             [estabelecimentos]="[]"
             [selectedEstabelecimento]="null"
             [isLoading]="false"
-            [error]="'Erro ao carregar estabelecimentos. Verifique sua conexão.'"
+            [error]="'Sem conexão com a internet. Não é possível carregar estabelecimentos.'"
             (estabelecimentoSelected)="onEstabelecimentoSelected($event)"
             (viewDetails)="onViewDetails($event)"
             (retry)="onRetry()">
@@ -333,8 +333,10 @@ export class UiDemoComponent {
   }
 
   onRetry(): void {
-    console.log('Retry clicked');
-    this.notificationService.info('Tentando novamente...');
+    console.log('Retry clicked - Always-online app: reloading page');
+    this.notificationService.info('Recarregando página...');
+    // Always-online app: reload page for network issues
+    setTimeout(() => window.location.reload(), 1000);
   }
 
   onDismiss(): void {

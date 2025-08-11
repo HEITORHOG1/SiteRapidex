@@ -29,21 +29,21 @@ export class ApiConfigService {
     ...environment,
     endpoints: {
       auth: {
-        login: '/api/Auth/login',
-        refreshToken: '/api/Auth/refresh-token'
+        login: '/Auth/login',
+        refreshToken: '/Auth/refresh-token'
       },
       estabelecimento: {
-        byProprietario: '/api/Estabelecimento/proprietario/{userId}',
-        byId: '/api/Estabelecimento/{id}'
+        byProprietario: '/Estabelecimento/proprietario/{userId}',
+        byId: '/Estabelecimento/{id}'
       },
       categoria: {
-        list: '/api/categorias/estabelecimentos/{estabelecimentoId}/categorias',
-        detail: '/api/categorias/estabelecimentos/{estabelecimentoId}/categorias/{id}',
-        create: '/api/categorias/estabelecimentos/{estabelecimentoId}/categorias',
-        update: '/api/categorias/estabelecimentos/{estabelecimentoId}/categorias/{id}',
-        delete: '/api/categorias/estabelecimentos/{estabelecimentoId}/categorias/{id}',
-        validate: '/api/categorias/estabelecimentos/{estabelecimentoId}/categorias/validate-name',
-        deletionValidation: '/api/categorias/estabelecimentos/{estabelecimentoId}/categorias/{id}/validate-deletion'
+        list: '/categorias/estabelecimentos/{estabelecimentoId}/categorias',
+        detail: '/categorias/estabelecimentos/{estabelecimentoId}/categorias/{id}',
+        create: '/categorias/estabelecimentos/{estabelecimentoId}/categorias',
+        update: '/categorias/estabelecimentos/{estabelecimentoId}/categorias/{id}',
+        delete: '/categorias/estabelecimentos/{estabelecimentoId}/categorias/{id}',
+        validate: '/categorias/estabelecimentos/{estabelecimentoId}/categorias/validate-name',
+        deletionValidation: '/categorias/estabelecimentos/{estabelecimentoId}/categorias/{id}/validate-deletion'
       }
     } as ApiEndpoints
   };
@@ -52,7 +52,7 @@ export class ApiConfigService {
    * Gets the full URL for an endpoint path
    */
   getEndpoint(path: string, params?: Record<string, string>): string {
-    let endpoint = this.config.apiBaseUrl + path;
+    let endpoint = this.config.apiUrl + path;
     
     if (params) {
       Object.entries(params).forEach(([key, value]) => {
@@ -78,7 +78,7 @@ export class ApiConfigService {
    * Gets the base API URL
    */
   getBaseUrl(): string {
-    return this.config.apiBaseUrl;
+    return this.config.apiUrl;
   }
 
   /**

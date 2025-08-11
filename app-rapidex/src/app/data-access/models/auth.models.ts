@@ -1,3 +1,5 @@
+import { ApiResponse, ApiError } from './api-response.models';
+
 export interface LoginRequest { 
   username: string; 
   password: string; 
@@ -32,7 +34,9 @@ export interface AuthState {
   isLoading: boolean;
 }
 
-export interface ApiError {
+// Legacy ApiError - kept for backward compatibility
+// Use ApiError from api-response.models.ts for new API format
+export interface LegacyApiError {
   code: string;
   message: string;
   details?: any;
@@ -64,3 +68,11 @@ export interface NotificationState {
   message: string;
   duration?: number;
 }
+
+// API Response Wrappers for new API format
+export type LoginApiResponse = ApiResponse<LoginResponse>;
+export type RefreshTokenApiResponse = ApiResponse<LoginResponse>;
+export type UserInfoApiResponse = ApiResponse<UserInfo>;
+
+// Re-export ApiError for backward compatibility
+export type { ApiError };

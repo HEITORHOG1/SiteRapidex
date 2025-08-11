@@ -1,14 +1,16 @@
 import { Injectable, inject } from '@angular/core';
-import { BehaviorSubject, Observable, catchError, throwError, tap, retry, timer, finalize, of } from 'rxjs';
+import { BehaviorSubject, Observable, catchError, throwError, tap, finalize } from 'rxjs';
 import { Estabelecimento } from '@data-access/models/estabelecimento.models';
 import { EstabelecimentoApi } from '@data-access/api/estabelecimento.api';
 import { ApiError, ErrorCodes, LoadingState, ErrorState } from '@data-access/models/auth.models';
+import { NetworkStatusService } from './network-status.service';
 
 @Injectable({
   providedIn: 'root'
 })
 export class EstabelecimentoService {
   private api = inject(EstabelecimentoApi);
+  private networkStatusService = inject(NetworkStatusService);
   
   // Estado reativo para o estabelecimento selecionado
   private selectedEstabelecimentoSubject = new BehaviorSubject<Estabelecimento | null>(null);
@@ -34,23 +36,14 @@ export class EstabelecimentoService {
   public readonly loadingEstabelecimentoById$ = this.loadingEstabelecimentoByIdSubject.asObservable();
 
   /**
-   * Carrega estabelecimentos e atualiza o estado com retry e error handling
+   * Carrega estabelecimentos e atualiza o estado
    */
-  loadEstabelecimentosForProprietario(proprietarioId: string, retryCount: number = 2): Observable<Estabelecimento[]> {
+  loadEstabelecimentosForProprietario(proprietarioId: string): Observable<Estabelecimento[]> {
     this.setLoadingState(true, 'Carregando estabelecimentos...');
     this.clearErrorState();
     this.loadingEstabelecimentosSubject.next(true);
     
     return this.api.getEstabelecimentosByProprietario(proprietarioId).pipe(
-      retry({
-        count: retryCount,
-        delay: (error, retryIndex) => {
-          console.warn(`Tentativa ${retryIndex + 1} de carregar estabelecimentos falhou:`, error);
-          // Exponential backoff: 1s, 2s, 4s...
-          const delay = Math.pow(2, retryIndex) * 1000;
-          return timer(delay);
-        }
-      }),
       tap(estabelecimentos => {
         this.estabelecimentosSubject.next(estabelecimentos);
         
@@ -64,7 +57,7 @@ export class EstabelecimentoService {
       catchError(error => {
         const apiError = this.mapToApiError(error, 'Erro ao carregar estabelecimentos');
         this.setErrorState(apiError);
-        console.error('Erro ao carregar estabelecimentos após tentativas:', apiError);
+        console.error('Erro ao carregar estabelecimentos:', apiError);
         return throwError(() => apiError);
       }),
       finalize(() => {
@@ -75,29 +68,20 @@ export class EstabelecimentoService {
   }
 
   /**
-   * Busca um estabelecimento específico por ID com retry e error handling
+   * Busca um estabelecimento específico por ID
    */
-  getEstabelecimentoById(id: string, retryCount: number = 2): Observable<Estabelecimento> {
+  getEstabelecimentoById(id: string): Observable<Estabelecimento> {
     this.loadingEstabelecimentoByIdSubject.next(true);
     this.clearErrorState();
     
     return this.api.getEstabelecimentoById(id).pipe(
-      retry({
-        count: retryCount,
-        delay: (error, retryIndex) => {
-          console.warn(`Tentativa ${retryIndex + 1} de carregar estabelecimento ${id} falhou:`, error);
-          // Exponential backoff: 1s, 2s, 4s...
-          const delay = Math.pow(2, retryIndex) * 1000;
-          return timer(delay);
-        }
-      }),
       tap(() => {
         this.clearErrorState();
       }),
       catchError(error => {
         const apiError = this.mapToApiError(error, `Erro ao carregar estabelecimento ${id}`);
         this.setErrorState(apiError);
-        console.error('Erro ao carregar estabelecimento por ID após tentativas:', apiError);
+        console.error('Erro ao carregar estabelecimento por ID:', apiError);
         return throwError(() => apiError);
       }),
       finalize(() => {
@@ -108,12 +92,10 @@ export class EstabelecimentoService {
 
   /**
    * Seleciona um estabelecimento específico
+   * Always-online app: no localStorage persistence
    */
   selectEstabelecimento(estabelecimento: Estabelecimento): void {
     this.selectedEstabelecimentoSubject.next(estabelecimento);
-    
-    // Salva no localStorage para persistir entre sessões
-    localStorage.setItem('selectedEstabelecimento', JSON.stringify(estabelecimento));
   }
 
   /**
@@ -123,24 +105,11 @@ export class EstabelecimentoService {
     return this.selectedEstabelecimentoSubject.value;
   }
 
-  /**
-   * Carrega o estabelecimento selecionado do localStorage
-   */
-  loadSelectedEstabelecimentoFromStorage(): void {
-    const stored = localStorage.getItem('selectedEstabelecimento');
-    if (stored) {
-      try {
-        const estabelecimento = JSON.parse(stored) as Estabelecimento;
-        this.selectedEstabelecimentoSubject.next(estabelecimento);
-      } catch (error) {
-        console.error('Erro ao carregar estabelecimento do localStorage:', error);
-        localStorage.removeItem('selectedEstabelecimento');
-      }
-    }
-  }
+
 
   /**
    * Limpa o estado dos estabelecimentos (útil no logout)
+   * Always-online app: no localStorage cleanup needed
    */
   clearEstabelecimentos(): void {
     this.estabelecimentosSubject.next([]);
@@ -149,7 +118,6 @@ export class EstabelecimentoService {
     this.loadingEstabelecimentoByIdSubject.next(false);
     this.clearLoadingState();
     this.clearErrorState();
-    localStorage.removeItem('selectedEstabelecimento');
   }
 
   /**
@@ -187,19 +155,7 @@ export class EstabelecimentoService {
     return this.errorStateSubject.value;
   }
 
-  /**
-   * Retry para carregar estabelecimentos após erro
-   */
-  retryLoadEstabelecimentos(proprietarioId: string): Observable<Estabelecimento[]> {
-    return this.loadEstabelecimentosForProprietario(proprietarioId);
-  }
 
-  /**
-   * Retry para carregar estabelecimento por ID após erro
-   */
-  retryGetEstabelecimentoById(id: string): Observable<Estabelecimento> {
-    return this.getEstabelecimentoById(id);
-  }
 
   // Private helper methods for state management
 
@@ -250,7 +206,7 @@ export class EstabelecimentoService {
 
     if (error.status === 0) {
       code = ErrorCodes.NETWORK_ERROR;
-      message = 'Erro de conexão. Verifique sua internet.';
+      message = this.networkStatusService.getNetworkErrorMessage();
     } else if (error.status === 401 || error.status === 403) {
       code = ErrorCodes.UNAUTHORIZED;
       message = 'Não autorizado. Faça login novamente.';

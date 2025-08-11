@@ -1,97 +1,9 @@
 <div class="dashboard-container">
-  <!-- Sidebar Menu -->
-  <aside 
-    class="sidebar" 
-    [class.collapsed]="sidebarCollapsed"
-    role="navigation"
-    aria-label="Menu principal">
-    <div class="sidebar-header">
-      <div class="logo" aria-hidden="true">
-        <span>📊</span>
-      </div>
-      <span class="logo-text" *ngIf="!sidebarCollapsed">Rapidex</span>
-    </div>
-
-    <nav class="sidebar-nav">
-      <ul class="nav-list" role="menubar">
-        <li class="nav-item" role="none">
-          <a 
-            routerLink="/dashboard" 
-            class="nav-link active"
-            role="menuitem"
-            [attr.aria-current]="'page'"
-            aria-label="Dashboard - página atual">
-            <span class="nav-icon" aria-hidden="true">🏠</span>
-            <span class="nav-text" *ngIf="!sidebarCollapsed">Dashboard</span>
-          </a>
-        </li>
-        <li class="nav-item" role="none">
-          <a 
-            routerLink="/profile" 
-            class="nav-link"
-            role="menuitem"
-            aria-label="Perfil do usuário">
-            <span class="nav-icon" aria-hidden="true">👤</span>
-            <span class="nav-text" *ngIf="!sidebarCollapsed">Perfil</span>
-          </a>
-        </li>
-        <li class="nav-item" role="none">
-          <a 
-            routerLink="/orders" 
-            class="nav-link"
-            role="menuitem"
-            aria-label="Gerenciar pedidos">
-            <span class="nav-icon" aria-hidden="true">📦</span>
-            <span class="nav-text" *ngIf="!sidebarCollapsed">Pedidos</span>
-          </a>
-        </li>
-        <li class="nav-item" role="none">
-          <a 
-            routerLink="/analytics" 
-            class="nav-link"
-            role="menuitem"
-            aria-label="Visualizar analytics">
-            <span class="nav-icon" aria-hidden="true">📈</span>
-            <span class="nav-text" *ngIf="!sidebarCollapsed">Analytics</span>
-          </a>
-        </li>
-        <li class="nav-item" role="none">
-          <a 
-            routerLink="/settings" 
-            class="nav-link"
-            role="menuitem"
-            aria-label="Configurações do sistema">
-            <span class="nav-icon" aria-hidden="true">⚙️</span>
-            <span class="nav-text" *ngIf="!sidebarCollapsed">Configurações</span>
-          </a>
-        </li>
-      </ul>
-    </nav>
-
-    <div class="sidebar-footer">
-      <div class="user-info" *ngIf="!sidebarCollapsed" role="img" [attr.aria-label]="'Usuário logado: ' + userName + ', ' + userRole">
-        <div class="user-avatar" aria-hidden="true">{{ userName.charAt(0).toUpperCase() }}</div>
-        <div class="user-details">
-          <span class="user-name">{{ userName }}</span>
-          <span class="user-role">{{ userRole }}</span>
-        </div>
-      </div>
-      <button 
-        class="logout-btn" 
-        (click)="logout()"
-        type="button"
-        aria-label="Sair do sistema">
-        <span class="nav-icon" aria-hidden="true">🚪</span>
-        <span class="nav-text" *ngIf="!sidebarCollapsed">Sair</span>
-      </button>
-    </div>
-  </aside>
-
   <!-- Main Content -->
   <main class="main-content" role="main" aria-label="Conteúdo principal do dashboard">
-    <!-- Header -->
-    <header class="header" role="banner">
-      <div class="header-left">
+    <!-- Dashboard Content -->
+    <div class="dashboard-content">
+      <div class="welcome-section">
         <h1 class="page-title" id="main-title">Dashboard</h1>
         <p class="page-subtitle">Bem-vindo de volta, {{ userName }}!</p>
         
@@ -152,31 +64,6 @@
           </button>
         </div>
       </div>
-      <div class="header-right">
-        <div class="search-bar" role="search">
-          <label for="search-input" class="sr-only">Pesquisar no dashboard</label>
-          <input 
-            type="text" 
-            id="search-input"
-            placeholder="Pesquisar..." 
-            class="search-input"
-            aria-label="Campo de pesquisa">
-          <span class="search-icon" aria-hidden="true">🔍</span>
-        </div>
-        <div class="notification-bell">
-          <button 
-            type="button" 
-            class="notification-btn"
-            aria-label="Notificações - 3 não lidas">
-            <span class="bell-icon" aria-hidden="true">🔔</span>
-            <span class="notification-badge" aria-label="3 notificações não lidas">3</span>
-          </button>
-        </div>
-      </div>
-    </header>
-
-    <!-- Dashboard Content -->
-    <div class="dashboard-content">
       <!-- Establishment Selector Modal/Overlay -->
       <div 
         class="establishment-selector-overlay" 

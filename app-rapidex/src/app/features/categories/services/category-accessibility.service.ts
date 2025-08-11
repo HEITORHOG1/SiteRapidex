@@ -73,7 +73,7 @@ export class CategoryAccessibilityService {
       cancel: 'Cancelar operação'
     };
 
-    return actionLabels[action] || `${action} categoria ${categoryName}`;
+    return actionLabels[action as keyof typeof actionLabels] || `${action} categoria ${categoryName}`;
   }
 
   /**
@@ -86,7 +86,7 @@ export class CategoryAccessibilityService {
       ativo: 'Status da categoria. Marque para manter a categoria ativa.'
     };
 
-    return descriptions[fieldName] || '';
+    return descriptions[fieldName as keyof typeof descriptions] || '';
   }
 
   /**
@@ -180,7 +180,7 @@ export class CategoryAccessibilityService {
       validation_error: `Erro de validação no formulário`
     };
 
-    let message = actionMessages[action] || `Ação ${action} realizada`;
+    let message = actionMessages[action as keyof typeof actionMessages] || `Ação ${action} realizada`;
     
     if (details) {
       message += `. ${details}`;
@@ -196,7 +196,7 @@ export class CategoryAccessibilityService {
       ativo: 'Status'
     };
 
-    return displayNames[fieldName] || fieldName;
+    return displayNames[fieldName as keyof typeof displayNames] || fieldName;
   }
 
   private detectAccessibilityPreferences(): void {

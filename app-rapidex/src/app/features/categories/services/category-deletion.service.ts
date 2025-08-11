@@ -206,7 +206,7 @@ export class CategoryDeletionService {
           this.removePendingUndo(undoToken);
           
           // Show success notification
-          this.notificationService.showSuccess(
+          this.notificationService.success(
             `Categoria "${response.restoredCategory.nome}" foi restaurada com sucesso. ${response.restoredProductsCount} produto(s) foram restaurados.`
           );
         }
@@ -382,7 +382,7 @@ export class CategoryDeletionService {
       message += ' Você pode desfazer esta ação nos próximos 5 minutos.';
     }
 
-    this.notificationService.showSuccess(message);
+    this.notificationService.showSuccessMessage(message);
   }
 
   private showBulkDeletionSuccessNotification(response: BulkCategoryDeletionResponse): void {
@@ -400,6 +400,6 @@ export class CategoryDeletionService {
       message += ` ${totalAffectedProducts} produto(s) foram afetados.`;
     }
 
-    this.notificationService.showSuccess(message);
+    this.notificationService.showSuccessMessage(message);
   }
 }

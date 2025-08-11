@@ -11,8 +11,7 @@
       <p class="category-list__subtitle" *ngIf="selectedEstablishment$ | async as establishment">
         Gerenciar categorias de {{ establishment.nomeFantasia }}
       </p>
-      <!-- Offline Status Indicator -->
-      <app-offline-status></app-offline-status>
+
     </div>
 
     <div class="category-list__header-actions">
@@ -392,9 +391,9 @@
 
 <!-- Bulk Deletion Modal -->
 <app-bulk-deletion-modal
-  *ngIf="categoriesToBulkDelete().length > 0 && selectedEstablishment$ | async as establishment"
+  *ngIf="categoriesToBulkDelete().length > 0"
   [categories]="categoriesToBulkDelete()"
-  [estabelecimentoId]="establishment.id"
+  [estabelecimentoId]="1"
   [isVisible]="showBulkDeletionModal()"
   (result)="onBulkDeletionModalResult($event)"
   (close)="onCloseBulkDeletionModal()">

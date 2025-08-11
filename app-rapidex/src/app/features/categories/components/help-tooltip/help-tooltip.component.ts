@@ -299,7 +299,7 @@ export class HelpTooltipComponent implements OnInit, OnDestroy {
   @Input() delay = 500; // Delay in milliseconds before showing tooltip
 
   helpContent: HelpContent | undefined;
-  private isVisible = signal(false);
+  protected isVisible = signal(false);
   private destroy$ = new Subject<void>();
   private showTimeout: any;
   private hideTimeout: any;

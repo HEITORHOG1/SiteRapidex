@@ -90,7 +90,8 @@ export class CategoryDeletionModalComponent implements OnInit, OnDestroy {
     });
   }
 
-  private loadImpactAnalysis(): void {
+  // Tornado público para template
+  loadImpactAnalysis(): void {
     if (!this.category || !this.estabelecimentoId) return;
 
     this.loading.set(true);
@@ -102,13 +103,9 @@ export class CategoryDeletionModalComponent implements OnInit, OnDestroy {
         next: (analysis) => {
           this.impactAnalysis.set(analysis);
           this.loading.set(false);
-          
-          // Set default deletion type based on analysis
           if (analysis.suggestSoftDelete || !analysis.canDelete) {
             this.deletionForm.patchValue({ deletionType: 'soft' });
           }
-
-          // Move to next step
           this.currentStep.set(analysis.hasProducts ? 'options' : 'confirmation');
         },
         error: (error) => {
@@ -290,5 +287,13 @@ export class CategoryDeletionModalComponent implements OnInit, OnDestroy {
         this.onConfirm();
       }
     }
+  }
+
+  getSelectedCategoryName(): string {
+    const selectedId = this.deletionForm?.get('moveProductsToCategory')?.value;
+    if (!selectedId || !this.impactAnalysis()) return '';
+    
+    const category = this.impactAnalysis()!.alternativeCategories.find(c => c.id === selectedId);
+    return category?.nome || '';
   }
 }

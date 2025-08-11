@@ -140,7 +140,23 @@ body.high-contrast {
 
 // Reduced motion preferences
 .reduced-motion,
-body.reduced-motion,
+body.reduced-motion {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+
+  .parallax { transform: none !important; }
+
+  button:hover,
+  .btn:hover,
+  a:hover { transform: none !important; }
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
@@ -150,18 +166,12 @@ body.reduced-motion,
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
   }
-  
-  // Disable parallax and transform animations
-  .parallax {
-    transform: none !important;
-  }
-  
-  // Simplify hover effects
+
+  .parallax { transform: none !important; }
+
   button:hover,
   .btn:hover,
-  a:hover {
-    transform: none !important;
-  }
+  a:hover { transform: none !important; }
 }
 
 // Focus management

@@ -1,0 +1,64 @@
+<div class="sidebar-container" [class.collapsed]="isCollapsed()" [class.mobile]="isMobile()">
+  <!-- Sidebar -->
+  <aside class="sidebar" [class.collapsed]="isCollapsed()">
+    <!-- Header -->
+    <div class="sidebar-header">
+      <div class="logo" [class.collapsed]="isCollapsed()">
+        <span class="logo-icon">🚀</span>
+        <span class="logo-text" *ngIf="!isCollapsed()">Rapidex</span>
+      </div>
+      <button 
+        class="toggle-btn" 
+        (click)="toggleSidebar()"
+        [attr.aria-label]="isCollapsed() ? 'Expandir menu' : 'Recolher menu'">
+        <span class="toggle-icon" [class.rotated]="isCollapsed()">◀</span>
+      </button>
+    </div>
+
+    <!-- User Info -->
+    <div class="user-info" *ngIf="isAuth() && !isCollapsed()">
+      <div class="user-avatar">
+        <span>{{ displayName().charAt(0).toUpperCase() }}</span>
+      </div>
+      <div class="user-details">
+        <div class="user-name">{{ displayName() }}</div>
+        <div class="user-role">{{ userRole() }}</div>
+      </div>
+    </div>
+
+    <!-- Navigation Menu -->
+    <nav class="sidebar-nav" *ngIf="isAuth()">
+      <ul class="nav-list">
+        <li class="nav-item" *ngFor="let item of getVisibleMenuItems()">
+          <a 
+            [routerLink]="item.route" 
+            routerLinkActive="active"
+            class="nav-link"
+            (click)="closeSidebar()"
+            [attr.title]="isCollapsed() ? item.label : null">
+            <span class="nav-icon">{{ item.icon }}</span>
+            <span class="nav-label" *ngIf="!isCollapsed()">{{ item.label }}</span>
+          </a>
+        </li>
+      </ul>
+    </nav>
+
+    <!-- Logout Button -->
+    <div class="sidebar-footer" *ngIf="isAuth()">
+      <button 
+        class="logout-btn" 
+        (click)="logout()"
+        [attr.title]="isCollapsed() ? 'Sair' : null">
+        <span class="logout-icon">🚪</span>
+        <span class="logout-text" *ngIf="!isCollapsed()">Sair</span>
+      </button>
+    </div>
+  </aside>
+
+  <!-- Mobile Overlay -->
+  <div 
+    class="mobile-overlay" 
+    *ngIf="isMobile() && !isCollapsed()"
+    (click)="closeSidebar()">
+  </div>
+</div>

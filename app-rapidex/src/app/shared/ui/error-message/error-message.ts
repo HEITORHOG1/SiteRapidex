@@ -13,15 +13,20 @@ export type ErrorType = 'error' | 'warning' | 'info';
 export class ErrorMessageComponent {
   @Input() message: string = '';
   @Input() type: ErrorType = 'error';
-  @Input() showRetry: boolean = false;
-  @Input() retryText: string = 'Tentar novamente';
+  @Input() showRetry: boolean = false; // Deprecated for always-online app
+  @Input() retryText: string = 'Recarregar página';
   @Input() dismissible: boolean = false;
   
   @Output() retry = new EventEmitter<void>();
   @Output() dismiss = new EventEmitter<void>();
 
   onRetry(): void {
-    this.retry.emit();
+    // Always-online app: suggest page reload for network issues
+    if (this.message.includes('conexão') || this.message.includes('internet')) {
+      window.location.reload();
+    } else {
+      this.retry.emit();
+    }
   }
 
   onDismiss(): void {

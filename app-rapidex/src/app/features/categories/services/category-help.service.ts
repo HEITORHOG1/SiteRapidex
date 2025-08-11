@@ -32,7 +32,8 @@ export class CategoryHelpService {
   private helpModalVisible = new BehaviorSubject<boolean>(false);
 
   readonly helpModalVisible$ = this.helpModalVisible.asObservable();
-  readonly tourActive$ = this.tourActive.asObservable();
+  // tourActive é um signal; exportar diretamente getters ou usar computed
+  readonly tourActiveSignal = this.tourActive;
 
   constructor() {
     this.initializeHelpContent();

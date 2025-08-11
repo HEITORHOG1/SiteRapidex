@@ -4,7 +4,7 @@ import { LoginRequest, LoginResponse, UserInfo, AuthState, RefreshTokenRequest }
 import { AuthApi } from "../../data-access/api/auth.api";
 import { environment } from "../../../environments/environment";
 
-const STORAGE_KEYS = { token: "auth.token", refreshToken: "auth.refreshToken", expiresAt: "auth.expiresAt", roles: "auth.roles", user: "auth.user" } as const;
+
 
 @Injectable({ providedIn: "root" })
 export class AuthService {
@@ -20,25 +20,15 @@ export class AuthService {
   }
 
   private readInitial(): AuthState {
-    try {
-      return {
-        token: localStorage.getItem(STORAGE_KEYS.token),
-        refreshToken: localStorage.getItem(STORAGE_KEYS.refreshToken),
-        expiresAt: localStorage.getItem(STORAGE_KEYS.expiresAt),
-        roles: JSON.parse(localStorage.getItem(STORAGE_KEYS.roles) || "[]"),
-        user: JSON.parse(localStorage.getItem(STORAGE_KEYS.user) || "null"),
-        isLoading: false,
-      };
-    } catch { 
-      return { 
-        token: null, 
-        refreshToken: null, 
-        expiresAt: null, 
-        roles: [], 
-        user: null, 
-        isLoading: false 
-      }; 
-    }
+    // Always-online app: no localStorage persistence, start fresh each session
+    return { 
+      token: null, 
+      refreshToken: null, 
+      expiresAt: null, 
+      roles: [], 
+      user: null, 
+      isLoading: false 
+    };
   }
 
   authState(): Observable<AuthState> { return this.state$.asObservable(); }
@@ -85,15 +75,10 @@ export class AuthService {
       this.refreshTimer = undefined;
     }
 
-    // Limpa todos os dados de autenticação
-    Object.values(STORAGE_KEYS).forEach(k => localStorage.removeItem(k));
-    
-    // Limpa dados de estabelecimento também
-    localStorage.removeItem('selectedEstabelecimento');
-    
     // Reset refresh state
     this.refreshTokenInProgress = false;
     
+    // Always-online app: clear session state only (no localStorage cleanup)
     this.state$.next({ 
       token: null, 
       refreshToken: null, 
@@ -268,11 +253,7 @@ export class AuthService {
   }
 
   private persistLogin(res: LoginResponse) {
-    localStorage.setItem(STORAGE_KEYS.token, res.token);
-    localStorage.setItem(STORAGE_KEYS.refreshToken, res.refreshToken);
-    localStorage.setItem(STORAGE_KEYS.expiresAt, res.expiresAt);
-    localStorage.setItem(STORAGE_KEYS.roles, JSON.stringify(res.roles || []));
-    localStorage.setItem(STORAGE_KEYS.user, JSON.stringify(res.user || null));
+    // Always-online app: store in memory only, no localStorage persistence
     this.state$.next({ 
       token: res.token, 
       refreshToken: res.refreshToken, 

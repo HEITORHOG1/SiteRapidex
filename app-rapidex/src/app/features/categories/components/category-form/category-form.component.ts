@@ -52,7 +52,6 @@ import { NotificationService } from '../../../../shared/services/notification.se
 
 import { LoadingSpinnerComponent } from '../../../../shared/ui/loading/loading';
 import { ValidationFeedbackComponent } from '../validation-feedback/validation-feedback.component';
-import { AriaAnnounceDirective, FocusTrapDirective, KeyboardNavigationDirective, AriaDescribedByDirective, HighContrastDirective } from '../../directives/accessibility.directive';
 
 import { 
   createCategoryNameValidators, 
@@ -70,12 +69,7 @@ import {
     CommonModule,
     ReactiveFormsModule,
     LoadingSpinnerComponent,
-    ValidationFeedbackComponent,
-    AriaAnnounceDirective,
-    FocusTrapDirective,
-    KeyboardNavigationDirective,
-    AriaDescribedByDirective,
-    HighContrastDirective
+    ValidationFeedbackComponent
   ],
   templateUrl: './category-form.component.html',
   styleUrls: ['./category-form.component.scss', '../../styles/accessibility.scss'],

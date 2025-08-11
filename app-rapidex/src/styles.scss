@@ -1,11 +1,11 @@
 /* You can add global styles to this file, and also import other style files */
 
 // Import design system tokens and mixins
-@import 'styles/tokens';
-@import 'styles/mixins';
-@import 'styles/animations';
-@import 'styles/components';
-@import 'styles/utilities';
+@use 'styles/tokens' as *;
+@use 'styles/mixins' as *;
+@use 'styles/animations' as *;
+@use 'styles/components' as *;
+@use 'styles/utilities' as *;
 
 // Global styles
 *,

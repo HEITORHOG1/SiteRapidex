@@ -7,6 +7,9 @@ This project was generated using [Angular CLI](https://github.com/angular/angula
 To start a local development server, run:
 
 ```bash
+npm install
+npm start
+# or
 ng serve
 ```
 
@@ -46,13 +49,19 @@ ng test
 
 ## Running end-to-end tests
 
-For end-to-end (e2e) testing, run:
+For end-to-end (e2e) testing with Playwright, run:
 
 ```bash
-ng e2e
+npm install
+npx playwright install
+npm run test:e2e
 ```
 
-Angular CLI does not come with an end-to-end testing framework by default. You can choose one that suits your needs.
+You can also open the UI mode:
+
+```bash
+npm run test:e2e:ui
+```
 
 ## Additional Resources
 

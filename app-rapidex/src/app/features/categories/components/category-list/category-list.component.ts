@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy, ChangeDetectionStrategy, signal, computed, inject, ViewChild, ElementRef, Output, EventEmitter, HostListener } from '@angular/core';
+import { Component, OnInit, OnDestroy, ChangeDetectionStrategy, signal, computed, inject, ViewChild, ElementRef, Output, EventEmitter, HostListener, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule, FormControl } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -13,13 +13,10 @@ import { CategoryLazyLoaderService } from '../../services/category-lazy-loader.s
 import { CategoryBundleOptimizerService } from '../../services/category-bundle-optimizer.service';
 import { EstabelecimentoService } from '../../../../core/services/estabelecimento.service';
 import { CategoryCardComponent } from '../category-card/category-card.component';
-import { CategoryVirtualScrollComponent } from '../category-virtual-scroll/category-virtual-scroll.component';
 import { AdvancedSearchComponent } from '../advanced-search/advanced-search.component';
 import { CategoryDeletionModalComponent, DeletionModalResult } from '../category-deletion-modal/category-deletion-modal.component';
 import { BulkDeletionModalComponent, BulkDeletionModalResult } from '../bulk-deletion-modal/bulk-deletion-modal.component';
 import { UndoNotificationComponent } from '../undo-notification/undo-notification.component';
-import { OfflineStatusComponent } from '../offline-status/offline-status.component';
-import { AriaAnnounceDirective, FocusTrapDirective, KeyboardNavigationDirective, AriaDescribedByDirective, HighContrastDirective } from '../../directives/accessibility.directive';
 import { Category, CategoryFilters, PaginationState } from '../../models/category.models';
 
 export type ViewMode = 'grid' | 'list';
@@ -34,17 +31,10 @@ export type SortOption = 'nome' | 'dataCriacao' | 'dataAtualizacao';
     ReactiveFormsModule,
     RouterModule,
     CategoryCardComponent,
-    CategoryVirtualScrollComponent,
     AdvancedSearchComponent,
     CategoryDeletionModalComponent,
     BulkDeletionModalComponent,
-    UndoNotificationComponent,
-    OfflineStatusComponent,
-    AriaAnnounceDirective,
-    FocusTrapDirective,
-    KeyboardNavigationDirective,
-    AriaDescribedByDirective,
-    HighContrastDirective
+    UndoNotificationComponent
   ],
   templateUrl: './category-list.component.html',
   styleUrls: ['./category-list.component.scss', '../../styles/accessibility.scss'],
@@ -153,7 +143,9 @@ export class CategoryListComponent implements OnInit, OnDestroy {
     this.useVirtualScrolling.set(useVirtualScrolling);
 
     // Enable virtual scrolling for large datasets automatically
-    this.totalItems.subscribe(count => {
+    // Using effect instead of subscribe for signals
+    effect(() => {
+      const count = this.totalItems();
       if (count > 100 && this.performanceMode() === 'optimized') {
         this.useVirtualScrolling.set(true);
       }

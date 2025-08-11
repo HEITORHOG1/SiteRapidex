@@ -1,3 +1,5 @@
+import { ApiResponse } from '../../../data-access/models/api-response.models';
+
 /**
  * Core Category model interface
  */
@@ -64,3 +66,6 @@ export interface CategoryListParams {
   sortBy?: string;
   sortOrder?: 'asc' | 'desc';
 }
+
+// API Response Wrappers for new API format
+export type CategoryApiResponse = ApiResponse<Category>;

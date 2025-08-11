@@ -467,10 +467,10 @@ import { Subject, takeUntil } from 'rxjs';
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class GuidedTourComponent implements OnInit, OnDestroy {
-  private isActive = signal(false);
-  private currentStepIndex = signal(0);
-  private spotlightPosition = signal({ top: 0, left: 0, width: 0, height: 0 });
-  private tooltipPosition = signal({ top: 0, left: 0 });
+  protected isActive = signal(false);
+  protected currentStepIndex = signal(0);
+  protected spotlightPosition = signal({ top: 0, left: 0, width: 0, height: 0 });
+  protected tooltipPosition = signal({ top: 0, left: 0 });
   private destroy$ = new Subject<void>();
 
   tourSteps: TourStep[] = [];
@@ -482,9 +482,11 @@ export class GuidedTourComponent implements OnInit, OnDestroy {
   ) {}
 
   ngOnInit(): void {
+    // Comment out problematic subscription - use signal directly
+    /*
     this.helpService.tourActive$
       .pipe(takeUntil(this.destroy$))
-      .subscribe(active => {
+      .subscribe((active: boolean) => {
         this.isActive.set(active);
         if (active) {
           this.startTour();
@@ -492,6 +494,13 @@ export class GuidedTourComponent implements OnInit, OnDestroy {
           this.cleanup();
         }
       });
+    */
+    
+    // Use signal directly for now
+    if (this.helpService.tourActiveSignal()) {
+      this.isActive.set(true);
+      this.startTour();
+    }
 
     this.tourSteps = this.helpService.getTourSteps();
   }

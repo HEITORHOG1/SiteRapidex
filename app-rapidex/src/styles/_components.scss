@@ -1,4 +1,6 @@
 // Component-specific styles following BEM methodology
+@use 'tokens' as *;
+@use 'mixins' as *;
 
 // Button components
 .btn {

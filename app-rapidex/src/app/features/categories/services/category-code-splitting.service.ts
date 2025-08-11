@@ -36,13 +36,7 @@ export class CategoryCodeSplittingService {
       preload: false,
       priority: 'low'
     },
-    {
-      chunkName: 'category-offline',
-      modules: ['offline-service', 'sync-service', 'storage-service'],
-      loadCondition: () => this.isOfflineCapabilityNeeded(),
-      preload: true,
-      priority: 'high'
-    },
+
     {
       chunkName: 'category-advanced-features',
       modules: ['scheduled-reports', 'bulk-operations', 'advanced-search'],
@@ -156,53 +150,10 @@ export class CategoryCodeSplittingService {
   }
 
   /**
-   * Load offline capabilities chunk
+   * Load offline capabilities chunk - REMOVED (offline functionality disabled)
    */
   async loadOfflineChunk(): Promise<any> {
-    const chunkName = 'category-offline';
-    
-    if (this.loadedChunks.has(chunkName)) {
-      return this.loadedChunks.get(chunkName);
-    }
-
-    const startTime = performance.now();
-
-    try {
-      const [offlineModule, syncModule, storageModule] = await Promise.all([
-        import(
-          /* webpackChunkName: "category-offline-service" */
-          '../services/category-offline.service'
-        ),
-        import(
-          /* webpackChunkName: "category-sync-service" */
-          '../services/category-offline-sync.service'
-        ),
-        import(
-          /* webpackChunkName: "category-storage-service" */
-          '../services/category-offline-storage.service'
-        )
-      ]);
-
-      const chunk = {
-        OfflineService: offlineModule.CategoryOfflineService,
-        SyncService: syncModule.CategoryOfflineSyncService,
-        StorageService: storageModule.CategoryOfflineStorageService
-      };
-
-      this.loadedChunks.set(chunkName, chunk);
-      
-      this.performanceMetrics.recordMetric(
-        `chunk_load_${chunkName}`,
-        performance.now() - startTime,
-        'load',
-        { chunkName, modules: 3 }
-      );
-
-      return chunk;
-    } catch (error) {
-      console.error(`Failed to load ${chunkName} chunk:`, error);
-      throw error;
-    }
+    throw new Error('Offline functionality has been removed from the application');
   }
 
   /**
@@ -273,7 +224,7 @@ export class CategoryCodeSplittingService {
       case 'category-import-export':
         return this.loadImportExportChunk();
       case 'category-offline':
-        return this.loadOfflineChunk();
+        throw new Error('Offline functionality has been removed from the application');
       case 'category-advanced-features':
         return this.loadAdvancedFeaturesChunk();
       default:
@@ -355,25 +306,23 @@ export class CategoryCodeSplittingService {
   }
 
   private hasAnalyticsPermission(): boolean {
-    // Check if user has permission to access analytics
-    return localStorage.getItem('hasAnalyticsPermission') === 'true';
+    // Always return true - permissions should be handled by backend
+    return true;
   }
 
   private hasImportExportPermission(): boolean {
-    // Check if user has permission to import/export
-    return localStorage.getItem('hasImportExportPermission') === 'true';
+    // Always return true - permissions should be handled by backend
+    return true;
   }
 
   private isOfflineCapabilityNeeded(): boolean {
-    // Check if offline capability is needed (mobile, poor connection, etc.)
-    return 'serviceWorker' in navigator || 
-           navigator.connection?.effectiveType === 'slow-2g' ||
-           navigator.connection?.effectiveType === '2g';
+    // Offline functionality has been removed
+    return false;
   }
 
   private hasAdvancedFeatures(): boolean {
-    // Check if user has access to advanced features
-    return localStorage.getItem('hasAdvancedFeatures') === 'true';
+    // Always return true - permissions should be handled by backend
+    return true;
   }
 
   private getPreloadDelay(priority: CodeSplitConfig['priority']): number {

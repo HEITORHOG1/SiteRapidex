@@ -39,8 +39,7 @@ export interface AdvancedFilters {
 export class CategorySearchService {
   private categoryState = inject(CategoryStateService);
   
-  private readonly STORAGE_KEY_HISTORY = 'category-search-history';
-  private readonly STORAGE_KEY_SUGGESTIONS = 'category-search-suggestions';
+
   private readonly MAX_HISTORY_ITEMS = 20;
   private readonly MAX_SUGGESTIONS = 10;
 
@@ -80,8 +79,6 @@ export class CategorySearchService {
   );
 
   constructor() {
-    this.loadSearchHistory();
-    this.loadSearchSuggestions();
     this.setupSearchSubscription();
   }
 
@@ -210,7 +207,6 @@ export class CategorySearchService {
    */
   clearSearchHistory(): void {
     this.searchHistorySubject.next([]);
-    localStorage.removeItem(this.STORAGE_KEY_HISTORY);
   }
 
   /**
@@ -220,7 +216,6 @@ export class CategorySearchService {
     const currentHistory = this.searchHistorySubject.value;
     const updatedHistory = currentHistory.filter(h => h.query !== query);
     this.searchHistorySubject.next(updatedHistory);
-    this.saveSearchHistory(updatedHistory);
   }
 
   /**
@@ -395,7 +390,6 @@ export class CategorySearchService {
     updatedHistory = updatedHistory.slice(0, this.MAX_HISTORY_ITEMS);
     
     this.searchHistorySubject.next(updatedHistory);
-    this.saveSearchHistory(updatedHistory);
   }
 
   private updateSearchSuggestions(query: string): void {
@@ -418,51 +412,9 @@ export class CategorySearchService {
       .slice(0, this.MAX_SUGGESTIONS);
 
     this.searchSuggestionsSubject.next(sortedSuggestions);
-    this.saveSearchSuggestions(sortedSuggestions);
   }
 
-  private loadSearchHistory(): void {
-    try {
-      const stored = localStorage.getItem(this.STORAGE_KEY_HISTORY);
-      if (stored) {
-        const history: SearchHistory[] = JSON.parse(stored).map((item: any) => ({
-          ...item,
-          timestamp: new Date(item.timestamp)
-        }));
-        this.searchHistorySubject.next(history);
-      }
-    } catch (error) {
-      console.warn('Failed to load search history:', error);
-    }
-  }
 
-  private saveSearchHistory(history: SearchHistory[]): void {
-    try {
-      localStorage.setItem(this.STORAGE_KEY_HISTORY, JSON.stringify(history));
-    } catch (error) {
-      console.warn('Failed to save search history:', error);
-    }
-  }
-
-  private loadSearchSuggestions(): void {
-    try {
-      const stored = localStorage.getItem(this.STORAGE_KEY_SUGGESTIONS);
-      if (stored) {
-        const suggestions: SearchSuggestion[] = JSON.parse(stored);
-        this.searchSuggestionsSubject.next(suggestions);
-      }
-    } catch (error) {
-      console.warn('Failed to load search suggestions:', error);
-    }
-  }
-
-  private saveSearchSuggestions(suggestions: SearchSuggestion[]): void {
-    try {
-      localStorage.setItem(this.STORAGE_KEY_SUGGESTIONS, JSON.stringify(suggestions));
-    } catch (error) {
-      console.warn('Failed to save search suggestions:', error);
-    }
-  }
 
   private escapeRegExp(string: string): string {
     return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');

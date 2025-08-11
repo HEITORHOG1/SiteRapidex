@@ -27,7 +27,7 @@ export class EstabelecimentoSelectorComponent {
 
   @Output() estabelecimentoSelected = new EventEmitter<Estabelecimento>();
   @Output() viewDetails = new EventEmitter<Estabelecimento>();
-  @Output() retry = new EventEmitter<void>();
+  @Output() retry = new EventEmitter<void>(); // Deprecated for always-online app
   @Output() confirmSelection = new EventEmitter<Estabelecimento>();
 
   private focusedIndex: number = 0;
@@ -41,7 +41,12 @@ export class EstabelecimentoSelectorComponent {
   }
 
   onRetry(): void {
-    this.retry.emit();
+    // Always-online app: suggest page reload for network issues
+    if (this.error?.includes('conexão') || this.error?.includes('internet')) {
+      window.location.reload();
+    } else {
+      this.retry.emit();
+    }
   }
 
   onConfirmSelection(): void {

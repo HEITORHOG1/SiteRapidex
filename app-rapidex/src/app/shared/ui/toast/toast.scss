@@ -1,6 +1,6 @@
 @use 'sass:color';
-@import '../../../../styles/tokens';
-@import '../../../../styles/mixins';
+@use '../../../../styles/tokens' as *;
+@use '../../../../styles/mixins' as *;
 
 .toast {
   background-color: $white;

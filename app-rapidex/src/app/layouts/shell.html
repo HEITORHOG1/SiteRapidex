@@ -1,5 +1,19 @@
-<ng-container *ngIf="!isLoginPage(); else onlyForm">
-  <rx-header></rx-header>
-</ng-container>
-<ng-template #onlyForm></ng-template>
-<router-outlet></router-outlet>
+<div class="app-layout" [class.login-page]="isLoginPage()">
+  <!-- Sidebar for authenticated users -->
+  @if (isAuthenticated() && !isLoginPage()) {
+    <rx-sidebar></rx-sidebar>
+  }
+  
+  <!-- Main content area -->
+  <main class="main-content" [class.with-sidebar]="isAuthenticated() && !isLoginPage()">
+    <!-- Header for non-login pages -->
+    @if (!isLoginPage()) {
+      <rx-header></rx-header>
+    }
+    
+    <!-- Page content -->
+    <div class="content-wrapper" [class.login-wrapper]="isLoginPage()">
+      <router-outlet></router-outlet>
+    </div>
+  </main>
+</div>

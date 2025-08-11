@@ -2,7 +2,6 @@ import { Injectable, inject } from '@angular/core';
 import { BehaviorSubject, Observable, combineLatest, EMPTY, of } from 'rxjs';
 import { map, catchError, tap, finalize, switchMap } from 'rxjs/operators';
 import { CategoryHttpService } from './category-http.service';
-import { CategoryCacheService } from './category-cache.service';
 import { 
   Category, 
   CategoryState, 
@@ -25,7 +24,6 @@ import {
 })
 export class CategoryStateService {
   private categoryHttpService = inject(CategoryHttpService);
-  private categoryCache = inject(CategoryCacheService);
 
   // Private state subjects
   private categoriesSubject = new BehaviorSubject<Category[]>([]);
@@ -91,11 +89,6 @@ export class CategoryStateService {
    */
   setEstablishmentContext(estabelecimentoId: number): void {
     if (this.currentEstablishmentId !== estabelecimentoId) {
-      // Invalidate cache for previous establishment
-      if (this.currentEstablishmentId) {
-        this.categoryCache.invalidateCategoryCache(this.currentEstablishmentId);
-      }
-      
       this.currentEstablishmentId = estabelecimentoId;
       this.clearState();
     }
@@ -137,19 +130,6 @@ export class CategoryStateService {
       ...params // Override with provided params
     };
 
-    // Check cache first
-    const cachedCategories = this.categoryCache.getCategoryList(targetEstablishmentId, requestParams);
-    if (cachedCategories && !params) { // Only use cache if no specific params provided
-      this.setCategories(cachedCategories);
-      this.setLoading(false);
-      return of({ 
-        categorias: cachedCategories, 
-        total: cachedCategories.length, 
-        pagina: 1, 
-        totalPaginas: 1 
-      });
-    }
-
     return this.categoryHttpService.getCategories(targetEstablishmentId, requestParams).pipe(
       tap(response => {
         this.setCategories(response.categorias);
@@ -159,10 +139,6 @@ export class CategoryStateService {
           totalPages: response.totalPaginas,
           pageSize: this.paginationSubject.value.pageSize
         });
-        
-        // Cache the response with intelligent warming
-        this.categoryCache.setCategoryList(targetEstablishmentId, response.categorias, requestParams);
-        this.categoryCache.intelligentWarmup(targetEstablishmentId, response.categorias);
       }),
       catchError(error => {
         this.setError(this.extractErrorMessage(error));
@@ -196,14 +172,6 @@ export class CategoryStateService {
       return of(existingCategory);
     }
 
-    // Check cache
-    const cachedCategory = this.categoryCache.getCategory(this.currentEstablishmentId, categoryId);
-    if (cachedCategory) {
-      this.selectedCategorySubject.next(cachedCategory);
-      this.updateCategoryInList(cachedCategory);
-      return of(cachedCategory);
-    }
-
     this.setLoading(true);
     this.clearError();
 
@@ -212,10 +180,6 @@ export class CategoryStateService {
         this.selectedCategorySubject.next(category);
         // Update category in list if it exists
         this.updateCategoryInList(category);
-        // Cache the category
-        if (this.currentEstablishmentId) {
-          this.categoryCache.setCategory(this.currentEstablishmentId, category);
-        }
       }),
       catchError(error => {
         this.setError(this.extractErrorMessage(error));
@@ -258,13 +222,6 @@ export class CategoryStateService {
         // Replace optimistic category with real one
         this.replaceCategoryInList(optimisticCategory.id, createdCategory);
         this.selectedCategorySubject.next(createdCategory);
-        
-        // Invalidate cache to ensure fresh data on next load
-        if (this.currentEstablishmentId) {
-          this.categoryCache.invalidateCategoryCache(this.currentEstablishmentId);
-          // Cache the new category
-          this.categoryCache.setCategory(this.currentEstablishmentId, createdCategory);
-        }
       }),
       catchError(error => {
         // Revert optimistic update
@@ -315,15 +272,6 @@ export class CategoryStateService {
         if (this.selectedCategorySubject.value?.id === categoryId) {
           this.selectedCategorySubject.next(updatedCategory);
         }
-        
-        // Update cache
-        if (this.currentEstablishmentId) {
-          this.categoryCache.setCategory(this.currentEstablishmentId, updatedCategory);
-          // Invalidate list caches as they might be stale
-          this.categoryCache.invalidateByPattern(
-            new RegExp(`establishment-${this.currentEstablishmentId}-categories-list`)
-          );
-        }
       }),
       catchError(error => {
         // Revert optimistic update
@@ -363,10 +311,7 @@ export class CategoryStateService {
 
     return this.categoryHttpService.deleteCategory(this.currentEstablishmentId, categoryId).pipe(
       tap(() => {
-        // Deletion confirmed, invalidate cache
-        if (this.currentEstablishmentId) {
-          this.categoryCache.invalidateCategory(this.currentEstablishmentId, categoryId);
-        }
+        // Deletion confirmed
       }),
       catchError(error => {
         // Revert optimistic update
@@ -415,19 +360,7 @@ export class CategoryStateService {
       return of([]);
     }
 
-    // Check cache first for search results
-    const cachedResults = this.categoryCache.getSearchResults(this.currentEstablishmentId, query);
-    if (cachedResults) {
-      return of(cachedResults);
-    }
-
     return this.categoryHttpService.searchCategories(this.currentEstablishmentId, query).pipe(
-      tap(results => {
-        // Cache the search results
-        if (this.currentEstablishmentId) {
-          this.categoryCache.setSearchResults(this.currentEstablishmentId, query, results);
-        }
-      }),
       catchError(error => {
         this.setError(this.extractErrorMessage(error));
         return of([]);

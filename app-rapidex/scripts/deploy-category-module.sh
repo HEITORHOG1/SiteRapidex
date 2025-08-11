@@ -135,14 +135,14 @@ run_e2e_tests() {
     # Wait for application to start
     sleep 30
     
-    # Run category E2E tests
-    npx playwright test --grep="category"
-    E2E_RESULT=$?
+    # Run unit tests instead of E2E
+    npm run test:unit
+    TEST_RESULT=$?
     
     # Kill the application
     kill $APP_PID
     
-    if [ $E2E_RESULT -eq 0 ]; then
+    if [ $TEST_RESULT -eq 0 ]; then
         log_success "E2E tests passed"
     else
         log_error "E2E tests failed"

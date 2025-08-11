@@ -265,7 +265,7 @@
     top: 1rem;
     bottom: auto;
 
-    &--hidden {
+    &.undo-notification--hidden { /* substitui &--hidden */
       transform: translateY(-100%);
     }
   }
@@ -353,31 +353,11 @@
   .undo-notification {
     transition: none;
 
-    &--urgent {
-      animation: none;
-    }
+    &--urgent { animation: none; }
   }
-
-  .progress-bar {
-    transition: width 1s linear;
-  }
-
-  .loading-spinner {
-    animation: none;
-  }
-
-  .urgent-warning {
-    animation: none;
-    background: #fee2e2;
-  }
-
-  @keyframes pulse,
-  @keyframes urgentFlash,
-  @keyframes spin {
-    to {
-      transform: none;
-    }
-  }
+  .progress-bar { transition: width 1s linear; }
+  .loading-spinner { animation: none; }
+  .urgent-warning { animation: none; background: #fee2e2; }
 }
 
 // Dark Mode Support
@@ -438,11 +418,6 @@
 
 .undo-notification:nth-of-type(4) {
   bottom: calc(1rem + 360px);
-}
-
-// Accessibility improvements
-.undo-notification[aria-live="polite"] {
-  // Ensure screen readers announce the notification
 }
 
 // Focus trap for keyboard navigation

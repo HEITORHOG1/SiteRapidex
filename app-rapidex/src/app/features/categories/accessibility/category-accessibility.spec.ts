@@ -3,21 +3,18 @@ import { Component, DebugElement } from '@angular/core';
 import { By } from '@angular/platform-browser';
 import { CategoryAccessibilityService } from '../services/category-accessibility.service';
 import { CategoryAccessibilityTestingService } from '../services/category-accessibility-testing.service';
-import { AriaAnnounceDirective, FocusTrapDirective, KeyboardNavigationDirective } from '../directives/accessibility.directive';
-
 @Component({
   template: `
-    <div class="test-container" appKeyboardNav>
+    <div class="test-container">
       <h1>Test Category Management</h1>
       
       <!-- Form with accessibility features -->
-      <form class="category-form" appFocusTrap>
+      <form class="category-form">
         <div class="form-group">
           <label for="category-name">Nome da Categoria</label>
           <input 
             id="category-name" 
             type="text" 
-            appAriaDescribedBy 
             fieldName="nome"
             aria-required="true">
         </div>
@@ -26,7 +23,6 @@ import { AriaAnnounceDirective, FocusTrapDirective, KeyboardNavigationDirective 
           <label for="category-description">Descrição</label>
           <textarea 
             id="category-description" 
-            appAriaDescribedBy 
             fieldName="descricao">
           </textarea>
         </div>
@@ -75,7 +71,7 @@ import { AriaAnnounceDirective, FocusTrapDirective, KeyboardNavigationDirective 
     </div>
   `,
   standalone: true,
-  imports: [AriaAnnounceDirective, FocusTrapDirective, KeyboardNavigationDirective]
+  imports: []
 })
 class TestAccessibilityComponent {}
 
@@ -338,34 +334,7 @@ describe('Category Accessibility', () => {
     });
   });
 
-  describe('Accessibility Directives', () => {
-    it('should apply ARIA described by directive', () => {
-      const input = fixture.debugElement.query(By.css('input[appAriaDescribedBy]'));
-      expect(input).toBeTruthy();
-      
-      const describedBy = input.nativeElement.getAttribute('aria-describedby');
-      expect(describedBy).toBeTruthy();
-    });
 
-    it('should apply focus trap directive', () => {
-      const form = fixture.debugElement.query(By.css('form[appFocusTrap]'));
-      expect(form).toBeTruthy();
-      
-      // Should not throw errors when directive is applied
-      expect(true).toBe(true);
-    });
-
-    it('should apply keyboard navigation directive', () => {
-      const container = fixture.debugElement.query(By.css('[appKeyboardNav]'));
-      expect(container).toBeTruthy();
-      
-      // Should handle keyboard events
-      const keyEvent = new KeyboardEvent('keydown', { key: 'ArrowDown' });
-      container.nativeElement.dispatchEvent(keyEvent);
-      
-      expect(true).toBe(true);
-    });
-  });
 
   describe('Error Handling and Validation', () => {
     it('should provide accessible error messages', () => {

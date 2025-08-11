@@ -1,4 +1,5 @@
 import { Category, ProductSummary } from './category.models';
+import { ApiResponse } from '../../../data-access/models/api-response.models';
 
 /**
  * Request DTO for creating a new category
@@ -146,3 +147,14 @@ export interface CategoryDeletionAuditEntry {
   undoneBy?: number;
   undoneByName?: string;
 }
+
+// API Response Wrappers for new API format
+export type CategoryListApiResponse = ApiResponse<CategoryListResponse>;
+export type CategoryDetailApiResponse = ApiResponse<CategoryDetailResponse>;
+export type CategoryValidationApiResponse = ApiResponse<CategoryValidationResponse>;
+export type CategoryDeletionValidationApiResponse = ApiResponse<CategoryDeletionValidationResponse>;
+export type CategoryDeletionApiResponse = ApiResponse<CategoryDeletionResponse>;
+export type BulkCategoryDeletionApiResponse = ApiResponse<BulkCategoryDeletionResponse>;
+export type UndoCategoryDeletionApiResponse = ApiResponse<UndoCategoryDeletionResponse>;
+export type CategoryCreateApiResponse = ApiResponse<Category>;
+export type CategoryUpdateApiResponse = ApiResponse<Category>;

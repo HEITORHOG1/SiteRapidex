@@ -1,1 +1,21 @@
-<p>header works!</p>
+<header class="topbar">
+  <div class="topbar-left">
+    <h1 class="page-title">Dashboard</h1>
+  </div>
+  
+  <div class="topbar-right">
+    <div class="user-menu" *ngIf="isAuth()">
+      <div class="user-info">
+        <span class="user-name">{{ displayName() }}</span>
+        <span class="user-role">{{ role() }}</span>
+      </div>
+      <div class="user-avatar">
+        {{ displayName().charAt(0).toUpperCase() }}
+      </div>
+    </div>
+    
+    <a routerLink="/auth/login" class="login-link" *ngIf="!isAuth()">
+      Login
+    </a>
+  </div>
+</header>

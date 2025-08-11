@@ -302,7 +302,7 @@
               
               <div class="summary-item" *ngIf="bulkDeletionForm.get('moveProductsToCategory')?.value">
                 <strong>Mover produtos para:</strong>
-                {{ allAlternativeCategories().find(c => c.id == bulkDeletionForm.get('moveProductsToCategory')?.value)?.nome }}
+                {{ getSelectedAlternativeCategoryName() }}
               </div>
               
               <div class="summary-item" *ngIf="bulkDeletionForm.get('reason')?.value">
@@ -317,10 +317,10 @@
                 <span 
                   *ngFor="let category of categories" 
                   class="category-chip"
-                  [class.category-chip--with-products]="impactAnalyses().find(a => a.category.id === category.id)?.hasProducts">
+                  [class.category-chip--with-products]="getCategoryImpact(category.id)?.hasProducts">
                   {{ category.nome }}
-                  <small *ngIf="impactAnalyses().find(a => a.category.id === category.id)?.hasProducts">
-                    ({{ impactAnalyses().find(a => a.category.id === category.id)?.totalProductsCount }} produtos)
+                  <small *ngIf="getCategoryImpact(category.id)?.hasProducts">
+                    ({{ getCategoryImpact(category.id)?.totalProductsCount }} produtos)
                   </small>
                 </span>
               </div>

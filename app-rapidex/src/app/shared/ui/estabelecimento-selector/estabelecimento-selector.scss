@@ -1,5 +1,6 @@
-@import '../../../../styles/tokens';
-@import '../../../../styles/mixins';
+@use 'sass:color';
+@use '../../../../styles/tokens' as *;
+@use '../../../../styles/mixins' as *;
 
 .estabelecimento-selector {
   width: 100%;
@@ -175,7 +176,7 @@
     transition: background-color $transition-fast;
 
     &:hover {
-      background: darken($primary-color, 10%);
+      background: color.adjust($primary-color, $lightness: -10%);
     }
 
     &:focus {
@@ -227,7 +228,7 @@
   padding: $spacing-lg;
   background: $gray-50;
   border-radius: $border-radius-lg;
-  border: 2px solid lighten($primary-color, 30%);
+  border: 2px solid color.adjust($primary-color, $lightness: 30%);
 
   @include desktop-up {
     flex-direction: row;
@@ -272,7 +273,7 @@
     transition: background-color $transition-fast;
 
     &:hover {
-      background: darken($primary-color, 10%);
+      background: color.adjust($primary-color, $lightness: -10%);
     }
 
     &:focus {
@@ -308,7 +309,7 @@
         left: -2px;
         right: -2px;
         bottom: -2px;
-        background: linear-gradient(45deg, $primary-color, lighten($primary-color, 20%));
+        background: linear-gradient(45deg, $primary-color, color.adjust($primary-color, $lightness: 20%));
         border-radius: inherit;
         z-index: -1;
         opacity: 0.1;
